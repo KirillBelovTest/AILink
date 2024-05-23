@@ -4,52 +4,112 @@
 (*Package Header*)
 
 
-BeginPackage["KirillBelov`GPTLink`", {"KirillBelov`Objects`"}];
+BeginPackage["KirillBelov`AILink`", {"KirillBelov`Objects`"}];
 
 
 ClearAll["`*"]; 
 
 
-GPTChatComplete::usage = 
-"GPTChatComplete[chat] complete given chat. 
-GPTChatCompleteAsync[prompt] complete given prompt. 
-GPTChatCompleteAsync[chat, prompt] complete chat using given prompt."; 
+AIChatComplete::usage = 
+"AIChatComplete[chat] complete given chat. 
+AIChatComplete[prompt] complete given prompt. 
+AIChatComplete[chat, prompt] complete chat using given prompt."; 
 
 
-GPTChatCompleteAsync::usage = 
-"GPTChatCompleteAsync[chat, callback] complete given chat in async mode. 
-GPTChatCompleteAsync[prompt, callback] complete given prompt in async mode. 
-GPTChatCompleteAsync[chat, prompt, callback] complete chat using given prompt in async mode."; 
+AIChatCompleteAsync::usage = 
+"AIChatCompleteAsync[chat, callback] complete given chat in async mode. 
+AIChatCompleteAsync[prompt, callback] complete given prompt in async mode. 
+AIChatCompleteAsync[chat, prompt, callback] complete chat using given prompt in async mode."; 
 
 
-GPTChatObject::usage = 
-"GPTChatObject[] symbolic chat representation in Wolfram Language.
-GPTChatObject[\"system\"] symbolic chat representation with system prompt in Wolfram Language."; 
+AIChatObject::usage = 
+"AIChatObject[] symbolic chat representation in Wolfram Language.
+AIChatObject[\"system\"] symbolic chat representation with system prompt in Wolfram Language."; 
+
+
+AITranscription::usage = 
+"AITranscription[audio] transcribe a gived audio file."; 
 
 
 Begin["`Private`"];
 
 
 (* ::Section:: *)
+(*Internal*)
+
+
+$directory = 
+ParentDirectory[DirectoryName[$InputFileName]]; 
+
+
+$icon = 
+Import[FileNameJoin[{$directory, "Images", "openai-logo.png"}]]; 
+
+
+promptPattern = 
+_String | _Image | {_String, _Image} | {_String, _Graphics} | {_String, Legended[_Graphics, ___]}; 
+
+
+(* ::Section:: *)
+(*AITranscription*)
+
+
+Options[AITranscription] = {
+	"Endpoint" -> "https://api.openai.com", 
+	"APIKey" :> SystemCredential["OPENAI_API_KEY"], 
+	"Model" -> "whisper-1", 
+	"Prompt" -> ""
+}; 
+
+
+audioPattern[] := 
+_Audio | File[_String?(FileExtension[#] === "mp3"&)]
+
+
+audioEncode[file_File] := 
+ReadByteArray[file]; 
+
+
+audioEncode[audio_Audio] := 
+ExportByteArray[audio, "MP3"]; 
+
+
+AITranscription[audio: audioPattern[], opts: OptionsPattern[]] := 
+Module[{endpoint, apiKey, model, url, request}, 
+	endpoint = OptionValue["Endpoint"]; 
+	apiKey = OptionValue["APIKey"]; 
+	model = OptionValue["Model"]; 
+
+	url = URLBuild[{endpoint, "v1", "audio", "transcriptions"}]; 
+	request = HTTPRequest[url, <|
+		Method -> "POST", 
+		"ContentType" -> "multipart/form-data", 
+		"Headers" -> {
+			"Authorization" -> "Bearer " <> apiKey
+		}, 
+		"Body" -> {
+			"file" -> <|
+				"Content" -> audio, 
+				"Name" -> "file", 
+				"MIMEType" -> "audio/mpeg"
+			|>, 
+			"model" -> model
+		}
+	|>]
+]; 
+
+
+(* ::Section:: *)
 (*Definitions*)
 
 
-$directory = ParentDirectory[DirectoryName[$InputFileName]]; 
-
-
-$icon = Import[FileNameJoin[{$directory, "Images", "chatgpt-logo.png"}]]; 
-
-
-promptPattern = _String | _Image | {_String, _Image} | {_String, _Graphics} | {_String, Legended[_Graphics, ___]}; 
-
-
-CreateType[GPTChatObject, {
+CreateType[AIChatObject, {
 	"Icon" -> $icon, 
 	"Endpoint" -> "https://api.openai.com", 
 	"Temperature" -> 0.7, 
 	"User", 
-	"APIToken" :> SystemCredential["OPENAI_API_KEY"], 
-	"Model" -> "gpt-4-turbo-preview", 
+	"APIKey" :> SystemCredential["OPENAI_API_KEY"], 
+	"Model" -> "gpt-4o", 
 	"MaxTokens" -> 70000, 
 	"TotalTokens" -> 0, 
 	"Tools" -> {}, 
@@ -61,26 +121,28 @@ CreateType[GPTChatObject, {
 }]; 
 
 
-GPTChatObject[system_String, opts: OptionsPattern[]] := 
-With[{chat = GPTChatObject[opts]}, 
+AIChatObject[system_String, opts: OptionsPattern[]] := 
+With[{chat = AIChatObject[opts]}, 
 	chat["Messages"] = Append[chat["Messages"], <|
 		"role" -> "system", 
-		"date" -> Now,
-		"content" -> system
+		"content" -> system, 
+		"date" -> Now
 	|>]; 
 	chat
 ]; 
 
 
-GPTChatObject /: Append[chat_GPTChatObject, message_Association?AssociationQ] := 
-(chat["Messages"] = Append[chat["Messages"], Append[message, "date" -> Now]]; chat); 
+AIChatObject /: Append[chat_AIChatObject, message_Association?AssociationQ] := (
+	chat["Messages"] = Append[chat["Messages"], Append[message, "date" -> Now]]; 
+	chat
+); 
 
 
-GPTChatObject /: Append[chat_GPTChatObject, message_String?StringQ] := 
+AIChatObject /: Append[chat_AIChatObject, message_String?StringQ] := 
 Append[chat, <|"role" -> "user", "content" -> message|>]; 
 
 
-GPTChatObject /: Append[chat_GPTChatObject, image_Image?ImageQ] := 
+AIChatObject /: Append[chat_AIChatObject, image_Image?ImageQ] := 
 With[{imageBase64 = BaseEncode[ExportByteArray[image, "JPEG"], "Base64"]}, 
 	Append[chat, <|"role" -> "user", "content" -> {
 		<|
@@ -93,7 +155,7 @@ With[{imageBase64 = BaseEncode[ExportByteArray[image, "JPEG"], "Base64"]},
 ]; 
 
 
-GPTChatObject /: Append[chat_GPTChatObject, {text_String?StringQ, image_Image?ImageQ}] := 
+AIChatObject /: Append[chat_AIChatObject, {text_String?StringQ, image_Image?ImageQ}] := 
 With[{imageBase64 = BaseEncode[ExportByteArray[image, "JPEG"], "Base64"]}, 
 	Append[chat, <|"role" -> "user", "content" -> {
 		<|"type" -> "text", "text" -> text|>, 
@@ -107,13 +169,13 @@ With[{imageBase64 = BaseEncode[ExportByteArray[image, "JPEG"], "Base64"]},
 ]; 
 
 
-GPTChatObject /: Append[chat_GPTChatObject, {text_String?StringQ, graphics: _Graphics | Legended[_Graphics, ___]}] := 
+AIChatObject /: Append[chat_AIChatObject, {text_String?StringQ, graphics: _Graphics | Legended[_Graphics, ___]}] := 
 With[{image = Rasterize[graphics]}, 
 	Append[chat, {text, image}]
 ]; 
 
 
-Options[GPTChatCompleteAsync] = {
+Options[AIChatCompleteAsync] = {
 	"Endpoint" -> Automatic, 
 	"Temperature" -> Automatic, 
 	"User" -> Automatic, 
@@ -128,12 +190,12 @@ Options[GPTChatCompleteAsync] = {
 }; 
 
 
-GPTChatCompleteAsync::err = 
+AIChatCompleteAsync::err = 
 "`1`"; 
 
 
-GPTChatCompleteAsync[chat_GPTChatObject, callback: _Function | _Symbol, 
-	secondCall: GPTChatComplete | GPTChatCompleteAsync: GPTChatCompleteAsync, opts: OptionsPattern[]] := 
+AIChatCompleteAsync[chat_AIChatObject, callback: _Function | _Symbol, 
+	secondCall: AIChatComplete | AIChatCompleteAsync: AIChatCompleteAsync, opts: OptionsPattern[]] := 
 Module[{ 
 	endpoint = ifAuto[OptionValue["Endpoint"], chat["Endpoint"]],  
 	apiToken = ifAuto[OptionValue["APIToken"], chat["APIToken"]], 
@@ -165,7 +227,7 @@ Module[{
 		"model" -> model, 
 		"messages" -> sanitaze[messages], 
 		"temperature" -> temperature, 
-		If[# === Nothing, Nothing, "tools" -> #] &@ toolFunction[tools], 
+		If[# === Nothing, Nothing, "tools" -> #]& @ toolFunction[tools], 
 		If[Length[tools] > 0, "tool_choice" -> functionChoice[toolChoice], Nothing]
 	|>; 
 
@@ -209,21 +271,21 @@ Module[{
 											"date" -> Now
 										|>]; 
 
-										If[secondCall === GPTChatComplete, 
+										If[secondCall === AIChatComplete, 
 											secondCall[chat, opts], 
 										(*Else*)
 											secondCall[chat, callback, secondCall, opts]
 										], 
 									(*Else*)
-										Message[GPTChatCompleteAsync::err, $result]; $Failed		
+										Message[AIChatCompleteAsync::err, $result]; $Failed		
 									];
 								], 
 								callback[chat], 
 							(*Else*)
-								Message[GPTChatCompleteAsync::err, responseAssoc]; $Failed
+								Message[AIChatCompleteAsync::err, responseAssoc]; $Failed
 							], 
 						(*Else*)
-							Message[GPTChatCompleteAsync::err, responseAssoc]; $Failed
+							Message[AIChatCompleteAsync::err, responseAssoc]; $Failed
 						], 
 						$Failed
 					]
@@ -235,34 +297,34 @@ Module[{
 ]; 
 
 
-GPTChatCompleteAsync[chat_GPTChatObject, prompt: promptPattern, callback: _Symbol | _Function, 
-	secondCall: GPTChatComplete | GPTChatCompleteAsync: GPTChatCompleteAsync, opts: OptionsPattern[]] := (
+AIChatCompleteAsync[chat_AIChatObject, prompt: promptPattern, callback: _Symbol | _Function, 
+	secondCall: AIChatComplete | AIChatCompleteAsync: AIChatCompleteAsync, opts: OptionsPattern[]] := (
 	Append[chat, prompt]; 
-	GPTChatCompleteAsync[chat, callback, secondCall, opts]
+	AIChatCompleteAsync[chat, callback, secondCall, opts]
 ); 
 
 
-GPTChatCompleteAsync[prompt: promptPattern, callback: _Symbol | _Function, 
-	secondCall: GPTChatComplete | GPTChatCompleteAsync: GPTChatCompleteAsync, opts: OptionsPattern[]] := 
-With[{chat = GPTChatObject[]}, 
+AIChatCompleteAsync[prompt: promptPattern, callback: _Symbol | _Function, 
+	secondCall: AIChatComplete | AIChatCompleteAsync: AIChatCompleteAsync, opts: OptionsPattern[]] := 
+With[{chat = AIChatObject[]}, 
 	Append[chat, prompt]; 
-	GPTChatCompleteAsync[chat, callback, secondCall, opts]
+	AIChatCompleteAsync[chat, callback, secondCall, opts]
 ]; 
 
 
-Options[GPTChatComplete] = Options[GPTChatCompleteAsync]; 
+Options[AIChatComplete] = Options[AIChatCompleteAsync]; 
 
 
-GPTChatComplete[chat_GPTChatObject, opts: OptionsPattern[]] := 
-(TaskWait[GPTChatCompleteAsync[chat, Identity, GPTChatComplete, opts]]; chat); 
+AIChatComplete[chat_AIChatObject, opts: OptionsPattern[]] := 
+(TaskWait[AIChatCompleteAsync[chat, Identity, AIChatComplete, opts]]; chat); 
 
 
-GPTChatComplete[chat_GPTChatObject, prompt: promptPattern, opts: OptionsPattern[]] := 
-(TaskWait[GPTChatCompleteAsync[chat, prompt, Identity, GPTChatComplete, opts]]; chat); 
+AIChatComplete[chat_AIChatObject, prompt: promptPattern, opts: OptionsPattern[]] := 
+(TaskWait[AIChatCompleteAsync[chat, prompt, Identity, AIChatComplete, opts]]; chat); 
 
 
-GPTChatComplete[prompt: promptPattern, opts: OptionsPattern[]] := 
-With[{chat = GPTChatObject[]}, TaskWait[GPTChatCompleteAsync[chat, prompt, Identity, GPTChatComplete, opts]]; chat]; 
+AIChatComplete[prompt: promptPattern, opts: OptionsPattern[]] := 
+With[{chat = AIChatObject[]}, TaskWait[AIChatCompleteAsync[chat, prompt, Identity, AIChatComplete, opts]]; chat]; 
 
 
 (* ::Sction:: *)
@@ -274,12 +336,16 @@ ifAuto[Automatic, value_] := value;
 
 ifAuto[value_, _] := value; 
 
-defaultToolHandler[message_] := Module[{func = message[["tool_calls", 1, "function", "name"]] // ToExpression},
-	Apply[$func] @ Values @ ImportString[ImportString[
-										message["Messages"][["tool_calls", 1, "function", "arguments"]], 
-										"Text"], "RawJSON", CharacterEncoding -> "UTF-8"
-									]
-]
+
+defaultToolHandler[message_] := Module[{$func = ToExpression[message[["tool_calls", 1, "function", "name"]]]},
+	Apply[$func] @ 
+	Values @ 
+	ImportString[
+		ImportString[message["Messages"][["tool_calls", 1, "function", "arguments"]], "Text"], 
+		"RawJSON", 
+		CharacterEncoding -> "UTF-8"
+	]
+]; 
 
 
 defaultToolFunction[function_Symbol] := 
@@ -305,7 +371,9 @@ defaultToolFunction[function_Symbol] :=
 	|>
 |>; 
 
+
 defaultToolFunction[list_List] := If[Length[list] > 0, Map[defaultToolFunction] @ tools, Nothing]
+
 
 defaultToolFunction[assoc_Association?AssociationQ] := 
 assoc; 
@@ -325,6 +393,7 @@ assoc;
 
 functionChoice[_] := 
 "none"; 
+
 
 sanitaze[list_List] :=  Function[message, KeyDrop[message, "date"] ] /@ list 
 
