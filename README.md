@@ -1,29 +1,29 @@
-# GPTLink
+# AILink
 
 ## Installation
 
 ```mathematica
-PacletInstall["KirillBelov/GPTLink"]
+PacletInstall["KirillBelov/AILink"]
 ```
 
 ## Import
 
 ```mathematica
-Get["KirillBelov`GTPLink`"]
+Get["KirillBelov`AILink`"]
 ```
 
 ## Functions
 
-### GPTChatObject
+### AIChatObject
 
 Symbolic chat representation.
 
 ```mathematica
-GPTChatObject[]
+AIChatObject[]
 
-GPTChatObject["System info for the bot"]
+AIChatObject["System info for the bot"]
 
-GPTChatObject[
+AIChatObject[
     "APIToken" -> SystemCreadential["OPENAI_API_KEY"], 
     "Endpoint" -> "https://api.openai.com", 
     "MaxTokens" -> 70000, 
@@ -34,33 +34,33 @@ GPTChatObject[
 ]
 ```
 
-### GPTChatComplete
+### AIChatComplete
 
 Complete the given chat. 
 
 ```mathematica
-GPTChatComplete["prompt"] 
+AIChatComplete["prompt"] 
 
-GPTChatComplete[chatObject] 
+AIChatComplete[chatObject] 
 
-GPTChatComplete[chatObject, "prompt"]
+AIChatComplete[chatObject, "prompt"]
 
-GPTChatComplete[..., chatObjectOptions]
+AIChatComplete[..., chatObjectOptions]
 ```
 
-### GPTChatCompleteAsync
+### AIChatCompleteAsync
 
 Async chat completion.  
 When the body is received, a callback executes. 
 
 ```mathematica
-GPTChatCompleteAsync["prompt", callbackFunction] 
+AIChatCompleteAsync["prompt", callbackFunction] 
 
-GPTChatComplete[chatObject, callbackFunction] 
+AIChatComplete[chatObject, callbackFunction] 
 
-GPTChatComplete[chatObject, "prompt", callbackFunction]
+AIChatComplete[chatObject, "prompt", callbackFunction]
 
-GPTChatComplete[..., callbackFunction, chatObjectOptions]
+AIChatComplete[..., callbackFunction, chatObjectOptions]
 ```
 
 ## Chat properties
@@ -69,8 +69,8 @@ The chat is a mutable object.
 It has properties that give access to chat messages and additional information. 
 
 ```mathematica
-chat = GPTChatObject[]; 
-GPTChatComplete[chat, "Hi!"];
+chat = AIChatObject[]; 
+AIChatComplete[chat, "Hi!"];
 
 chat["Messages"]
 (*Out[] = {
@@ -96,12 +96,12 @@ WolframAlpha[TextTranslation[query, "English"], "ShortAnswer"]
 Now let's create a chat + plugin and let's make request to OpenAI:
 
 ```mathematica
-chat = GPTChatObject[
+chat = AIChatObject[
     "You are bot with access to WolframAlpha with function wolframAlpha(query).", 
     "Tools" -> {wolframAlpha}
 ]; 
 
-GPTChatComplete[chat, "Hi, what is date today?"]["Messages"]
+AIChatComplete[chat, "Hi, what is date today?"]["Messages"]
 (*{
     <|"role" -> "system",    "content" -> "You are bot with access to WolframAlpha with function wolframAlpha(query)."|>, 
     <|"role" -> "user",      "content" -> "Hi, what is date today?"|>, 
