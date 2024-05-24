@@ -31,6 +31,10 @@ AITranscription::usage =
 "AITranscription[audio] transcribe a gived audio file."; 
 
 
+AISpeech::usage = 
+"AISpeech[text] generate audio from a given text."; 
+
+
 Begin["`Private`"];
 
 
@@ -102,6 +106,40 @@ Module[{endpoint, apiKey, model, url, request, response},
 	ImportString[ExportString[response["Body"], "Text"], "RawJSON", CharacterEncoding -> "UTF-8"]
 ]; 
 
+
+Options[AISpeech] = {
+	"Endpoint" -> "https://api.openai.com", 
+	"APIKey" :> SystemCredential["OPENAI_API_KEY"], 
+	"Model" -> "tts-1", 
+	"Voice" -> "alloy"
+}; 
+
+
+AISpeech[input_String, OptionsPattern[]] := 
+Module[{
+	endpoint = OptionValue["Endpoint"], 
+	apiKey = OptionValue["APIKey"], 
+	model = OptionValue["Model"], 
+	voice = OptionValue["Voice"], 
+	url, request, response
+}, 
+	url = URLBuild[{endpoint, "v1", "audio", "speech"}]; 
+	request = HTTPRequest[url, <|
+		Method -> "POST", 
+		"Headers" -> <|
+			"Authorization" -> "Bearer " <> apiKey
+		|>, 
+		"ContentType" -> "application/json", 
+		"Body" -> ExportString[<|
+			"model" -> model, 
+			"input" -> input, 
+			"voice" -> voice
+		|>, "RawJSON", CharacterEncoding -> "UTF-8"]
+	|>]; 
+	response = URLRead[request]; 
+
+	ImportByteArray[response["BodyByteArray"], "MP3"]
+]
 
 (* ::Section:: *)
 (*Definitions*)
