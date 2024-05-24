@@ -63,7 +63,7 @@ Options[AITranscription] = {
 
 
 audioPattern[] := 
-_Audio | File[_String?(FileExtension[#] === "mp3"&)]
+_Audio | File[_String?(StringMatchQ[FileExtension[#], {"mp3", "wav"}]&)]
 
 
 audioEncode[file_File] := 
@@ -75,7 +75,7 @@ ExportByteArray[audio, "MP3"];
 
 
 AITranscription[audio: audioPattern[], opts: OptionsPattern[]] := 
-Module[{endpoint, apiKey, model, url, request}, 
+Module[{endpoint, apiKey, model, url, request, response}, 
 	endpoint = OptionValue["Endpoint"]; 
 	apiKey = OptionValue["APIKey"]; 
 	model = OptionValue["Model"]; 
@@ -89,13 +89,17 @@ Module[{endpoint, apiKey, model, url, request},
 		}, 
 		"Body" -> {
 			"file" -> <|
-				"Content" -> audio, 
+				"Content" -> audioEncode[audio], 
 				"Name" -> "file", 
 				"MIMEType" -> "audio/mpeg"
 			|>, 
 			"model" -> model
 		}
-	|>]
+	|>]; 
+
+	response = URLRead[request]; 
+
+	ImportString[ExportString[response["Body"], "Text"], "RawJSON", CharacterEncoding -> "UTF-8"]
 ]; 
 
 
@@ -117,8 +121,13 @@ CreateType[AIChatObject, {
 	"ToolFunction" -> defaultToolFunction,
 	"ToolChoice" -> "auto", 
 	"Messages" -> {}, 
-	"Logger" -> None
+	"Logger" -> None, 
+	"History" -> {}
 }]; 
+
+
+(chat_AIChatObject)[index_] := 
+chat["Messages"][[index]]; 
 
 
 AIChatObject[system_String, opts: OptionsPattern[]] := 
@@ -179,7 +188,7 @@ Options[AIChatCompleteAsync] = {
 	"Endpoint" -> Automatic, 
 	"Temperature" -> Automatic, 
 	"User" -> Automatic, 
-	"APIToken" -> Automatic, 
+	"APIKey" -> Automatic, 
 	"Model" -> Automatic, 
 	"MaxTokens" -> Automatic, 
 	"Tools" -> Automatic, 
@@ -196,9 +205,9 @@ AIChatCompleteAsync::err =
 
 AIChatCompleteAsync[chat_AIChatObject, callback: _Function | _Symbol, 
 	secondCall: AIChatComplete | AIChatCompleteAsync: AIChatCompleteAsync, opts: OptionsPattern[]] := 
-Module[{ 
+Module[{
 	endpoint = ifAuto[OptionValue["Endpoint"], chat["Endpoint"]],  
-	apiToken = ifAuto[OptionValue["APIToken"], chat["APIToken"]], 
+	apiKey = ifAuto[OptionValue["APIKey"], chat["APIKey"]], 
 	model = ifAuto[OptionValue["Model"], chat["Model"]], 
 	temperature = ifAuto[OptionValue["Temperature"], chat["Temperature"]], 
 	tools = ifAuto[OptionValue["Tools"], chat["Tools"]], 
@@ -207,18 +216,13 @@ Module[{
 	maxTokens = ifAuto[OptionValue["MaxTokens"], chat["MaxTokens"]], 
 	logger = ifAuto[OptionValue["Logger"], chat["Logger"]],
 	toolHandler = ifAuto[OptionValue["ToolHandler"], chat["ToolHandler"]],
-	url, 
-	headers, 
-	messages, 
-	requestAssoc, 
-	requestBody, 
-	request
+	url, headers, messages, requestAssoc, requestBody, request
 }, 
 	url = URLBuild[{endpoint, "v1", "chat", "completions"}]; 
 	
 	headers = {
-		"Authorization" -> "Bearer " <> apiToken, 
-		"X-API-KEY" -> apiToken
+		"Authorization" -> "Bearer " <> apiKey, 
+		"X-API-KEY" -> apiKey
 	}; 
 	
 	messages = chat["Messages"]; 
@@ -226,10 +230,14 @@ Module[{
 	requestAssoc = <|
 		"model" -> model, 
 		"messages" -> sanitaze[messages], 
-		"temperature" -> temperature, 
-		If[# === Nothing, Nothing, "tools" -> #]& @ toolFunction[tools], 
-		If[Length[tools] > 0, "tool_choice" -> functionChoice[toolChoice], Nothing]
+		"temperature" -> temperature
 	|>; 
+
+	toolsProp = toolFunction[tools]; 
+	If[Length[toolsProp] > 0, 
+		requestAssoc["tools"] = toolsProp; 
+		requestAssoc["tool_choice"] = functionChoice[toolChoice]
+	]; 
 
 	requestBody = ExportString[requestAssoc, "RawJSON", CharacterEncoding -> "UTF-8"]; 
 	
@@ -240,11 +248,14 @@ Module[{
 		"Body" -> requestBody
 	|>]; 
 	
+	chat["History"] = Append[chat["History"], request]; 
+
 	With[{$request = request, $logger = logger, $requestAssoc = requestAssoc}, 
 		URLSubmit[$request, 
 			HandlerFunctions -> <|
 				"HeadersReceived" -> Function[$logger[<|"Body" -> $requestAssoc, "Event" -> "RequestBody"|>]], 
 				"BodyReceived" -> Function[Module[{responseBody, responseAssoc}, 
+					chat["History"] = Append[chat["History"], #]; 
 					If[#["StatusCode"] === 200, 
 						responseBody = ExportString[#["Body"], "String"]; 
 						responseAssoc = ImportString[responseBody, "RawJSON", CharacterEncoding -> "UTF-8"]; 
@@ -260,8 +271,6 @@ Module[{
 								Module[{
 									$result = toolHandler[chat["Messages"][[-1]]]
 								}, 
-								
-
 									If[StringQ[$result], 
 										Append[chat, <|
 											"role" -> "tool", 
@@ -291,7 +300,8 @@ Module[{
 					]
 				]]
 			|>, 
-			HandlerFunctionsKeys -> {"StatusCode", "Body", "Headers"}
+			HandlerFunctionsKeys -> {"StatusCode", "Body", "Headers"}, 
+			TimeConstraint -> 10 * 60
 		]
 	]
 ]; 
@@ -327,21 +337,23 @@ AIChatComplete[prompt: promptPattern, opts: OptionsPattern[]] :=
 With[{chat = AIChatObject[]}, TaskWait[AIChatCompleteAsync[chat, prompt, Identity, AIChatComplete, opts]]; chat]; 
 
 
-(* ::Sction:: *)
+(* ::Section:: *)
 (*Internal*)
 
 
-ifAuto[Automatic, value_] := value; 
+ifAuto[Automatic, value_] := 
+value; 
 
 
-ifAuto[value_, _] := value; 
+ifAuto[value_, _] := 
+value; 
 
 
 defaultToolHandler[message_] := Module[{$func = ToExpression[message[["tool_calls", 1, "function", "name"]]]},
 	Apply[$func] @ 
 	Values @ 
 	ImportString[
-		ImportString[message["Messages"][["tool_calls", 1, "function", "arguments"]], "Text"], 
+		ImportString[message[["tool_calls", 1, "function", "arguments"]], "Text"], 
 		"RawJSON", 
 		CharacterEncoding -> "UTF-8"
 	]
@@ -372,7 +384,8 @@ defaultToolFunction[function_Symbol] :=
 |>; 
 
 
-defaultToolFunction[list_List] := If[Length[list] > 0, Map[defaultToolFunction] @ tools, Nothing]
+defaultToolFunction[tools_List] := 
+Map[defaultToolFunction] @ tools; 
 
 
 defaultToolFunction[assoc_Association?AssociationQ] := 
@@ -395,7 +408,8 @@ functionChoice[_] :=
 "none"; 
 
 
-sanitaze[list_List] :=  Function[message, KeyDrop[message, "date"] ] /@ list 
+sanitaze[list_List] := 
+Map[Function[message, KeyDrop[message, "date"]]] @ list; 
 
 
 (* ::Section:: *)
