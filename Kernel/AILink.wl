@@ -71,7 +71,7 @@ Options[AITranscription] = {
 	"APIKey" :> SystemCredential["OPENAI_API_KEY"], 
 	"Model" -> "whisper-1", 
 	"Prompt" -> "", 
-	"Evaluator" -> CloudEvaluate
+	"Evaluator" :> $defaultEvaluator
 }; 
 
 
@@ -92,6 +92,7 @@ Module[{endpoint, apiKey, model, url, request, response},
 	endpoint = OptionValue["Endpoint"]; 
 	apiKey = OptionValue["APIKey"]; 
 	model = OptionValue["Model"]; 
+	evaluator = OptionValue["Evaluator"];
 
 	url = URLBuild[{endpoint, "v1", "audio", "transcriptions"}]; 
 	request = HTTPRequest[url, <|
@@ -110,7 +111,7 @@ Module[{endpoint, apiKey, model, url, request, response},
 		}
 	|>]; 
 
-	response = URLRead[request]; 
+	response = With[{$request = request}, evaluator[URLRead[$request]]]; 
 
 	ImportString[ExportString[response["Body"], "Text"], "RawJSON", CharacterEncoding -> "UTF-8"]
 ]; 
@@ -121,7 +122,7 @@ Options[AISpeech] = {
 	"APIKey" :> SystemCredential["OPENAI_API_KEY"], 
 	"Model" -> "tts-1", 
 	"Voice" -> "alloy", 
-	"Evaluator" -> CloudEvaluate
+	"Evaluator" :> $defaultEvaluator
 }; 
 
 
@@ -131,6 +132,7 @@ Module[{
 	apiKey = OptionValue["APIKey"], 
 	model = OptionValue["Model"], 
 	voice = OptionValue["Voice"], 
+	evaluator = OptionValue["Evaluator"], 
 	url, request, response
 }, 
 	url = URLBuild[{endpoint, "v1", "audio", "speech"}]; 
@@ -146,7 +148,8 @@ Module[{
 			"voice" -> voice
 		|>, "RawJSON", CharacterEncoding -> "UTF-8"]
 	|>]; 
-	response = URLRead[request]; 
+
+	response = With[{$request = request}, evaluator[URLRead[$request]]]; 
 
 	ImportByteArray[response["BodyByteArray"], "MP3"]
 ]; 
@@ -157,7 +160,7 @@ Options[AIImageGenerate] = {
 	"Endpoint" -> "https://api.openai.com", 
 	"Model" -> "dall-e-3", 
 	"Size" -> {1024, 1024}, 
-	"Evaluator" -> CloudEvaluate
+	"Evaluator" :> $defaultEvaluator
 }; 
 
 
@@ -167,6 +170,7 @@ Module[{
 	apiKey = OptionValue["APIKey"], 
 	model = OptionValue["Model"], 
 	size = OptionValue["Size"], 
+	evaluator = OptionValue["Evaluator"], 
 	url, request, response, json
 }, 
 	url = URLBuild[{endpoint, "v1", "images", "generations"}]; 
@@ -187,7 +191,9 @@ Module[{
 			CharacterEncoding -> "UTF-8"
 		]
 	|>]; 
-	response = URLRead[request]; 
+	
+	response = With[{$request = request}, evaluator[URLRead[$request]]]; 
+
 	json = ImportString[ExportString[response["Body"], "Text"], "RawJSON"]; 
 	json[["data", All, "image"]] = Map[Import][json[["data", All, "url"]]]; 
 	json
@@ -197,12 +203,12 @@ Module[{
 Options[AIModels] := {
 	"Endpoint" -> "https://api.openai.com", 
 	"APIKey" :> SystemCredential["OPENAI_API_KEY"], 
-	"Evaluator" -> CloudEvaluate
+	"Evaluator" :> $defaultEvaluator
 }; 
 
 
 AIModels[OptionsPattern[]] := 
-Module[{url, request, response}, 
+Module[{url, request, response, evaluator = OptionValue["Evaluator"]}, 
 
 	url = URLBuild[{OptionValue["Endpoint"], "v1", "models"}]; 
 
@@ -211,10 +217,23 @@ Module[{url, request, response},
 			"Authorization" -> "Bearer " <> OptionValue["APIKey"]
 		}
 	|>]; 
+	
+	With[{$request = request}, 
+		response = evaluator[URLRead[$request]]; 
+		ImportString[response["Body"], "RawJSON"]
+	]
+]; 
 
-	response = URLRead[request]; 
 
-	ImportString[response["Body"], "RawJSON"]
+$defaultEvaluator := $defaultEvaluator = 
+Module[{
+	response = ImportString[URLRead["https://api.openai.com/v1/models"]["Body"], "RawJSON"]
+}, 
+	If[KeyExistsQ[response, "error"] && response["error", "code"] === "unsupported_country_region_territory", 
+		CloudEvaluate, 
+	(*Else*)
+		Evaluate
+	]
 ]; 
 
 
@@ -228,7 +247,7 @@ CreateType[AIChatObject, {
 	"Temperature" -> 0.7, 
 	"User", 
 	"APIKey" :> SystemCredential["OPENAI_API_KEY"], 
-	"Model" -> "gpt-4o", 
+	"Model" -> "o1-preview", 
 	"MaxTokens" -> 70000, 
 	"TotalTokens" -> 0, 
 	"Tools" -> {}, 
@@ -238,7 +257,7 @@ CreateType[AIChatObject, {
 	"Messages" -> {}, 
 	"Logger" -> None, 
 	"History" -> {}, 
-	"Evaluator" -> CloudEvaluate
+	"Evaluator" :> $defaultEvaluator
 }]; 
 
 
@@ -312,7 +331,7 @@ Options[AIChatCompleteAsync] = {
 	"ToolFunction" -> Automatic,
 	"ToolHandler" -> Automatic,
 	"Logger" -> Automatic, 
-	"Evaluator" -> CloudEvaluate
+	"Evaluator" :> $defaultEvaluator
 }; 
 
 
