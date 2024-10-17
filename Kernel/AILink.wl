@@ -606,7 +606,7 @@ defaultToolFunction[function_Symbol] :=
 				) /. 
 				Verbatim[Pattern][$s_Symbol, Verbatim[Blank][$t_]] :> 
 				ToString[Unevaluated[$s]] -> <|
-					"type" -> ToLowerCase[ToString[$t]], 
+					"type" -> Replace[ToLowerCase[ToString[$t]], "real"-> "number"], 
 					"description" -> ToString[Unevaluated[$s]]
 				|>
 			)

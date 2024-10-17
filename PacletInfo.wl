@@ -5,7 +5,7 @@ PacletObject[
     "Name" -> "KirillBelov/AILink",
     "Description" -> "Client for differen AI",
     "Creator" -> "Kirill Belov",
-    "Version" -> "1.0.4",
+    "Version" -> "1.0.5",
     "WolframVersion" -> "14+",
     "PublisherID" -> "KirillBelov",
     "License" -> "MIT",
