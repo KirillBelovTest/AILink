@@ -478,7 +478,7 @@ Module[{
 	logger = ifAuto[OptionValue["Logger"], chat["Logger"]],
 	toolHandler = ifAuto[OptionValue["ToolHandler"], chat["ToolHandler"]],
 	evaluator = ifAuto[OptionValue["Evaluator"], chat["Evaluator"]], 
-	chatCompletedFunction = ifAuto[OptionValue["ChatCompletedFunction"], chat["ChatCompletedFunction"]]
+	chatCompletedFunction = ifAuto[OptionValue["ChatCompletedFunction"], chat["ChatCompletedFunction"]], 
 	url, headers, messages, requestAssoc, requestBody, request, 
 	response, responseBody, toolCalls
 }, 
