@@ -257,7 +257,8 @@ CreateType[AIChatObject, {
 	"Messages" -> {}, 
 	"Logger" -> None, 
 	"History" -> {}, 
-	"Evaluator" :> $defaultEvaluator
+	"Evaluator" :> $defaultEvaluator, 
+	"ChatCompletedFunction" :> Function[#]
 }]; 
 
 
@@ -331,7 +332,8 @@ Options[AIChatCompleteAsync] = {
 	"ToolFunction" -> Automatic,
 	"ToolHandler" -> Automatic,
 	"Logger" -> Automatic, 
-	"Evaluator" :> $defaultEvaluator
+	"Evaluator" :> $defaultEvaluator, 
+	"ChatCompletedFunction" :> Automatic
 }; 
 
 
@@ -475,7 +477,8 @@ Module[{
 	maxTokens = ifAuto[OptionValue["MaxTokens"], chat["MaxTokens"]], 
 	logger = ifAuto[OptionValue["Logger"], chat["Logger"]],
 	toolHandler = ifAuto[OptionValue["ToolHandler"], chat["ToolHandler"]],
-	evaluator = ifAuto[OptionValue["Evaluator"], chat["Evaluator"]],
+	evaluator = ifAuto[OptionValue["Evaluator"], chat["Evaluator"]], 
+	chatCompletedFunction = ifAuto[OptionValue["ChatCompletedFunction"], chat["ChatCompletedFunction"]]
 	url, headers, messages, requestAssoc, requestBody, request, 
 	response, responseBody, toolCalls
 }, 
@@ -532,7 +535,7 @@ Module[{
 				AIChatComplete[chat, opts]; 
 			]; 
 			
-			Return[chat], 
+			Return[chatCompletedFunction[chat]], 
 		(*Else*)
 			$Failed
 		]
