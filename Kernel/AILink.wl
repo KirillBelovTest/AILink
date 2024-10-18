@@ -247,7 +247,7 @@ CreateType[AIChatObject, {
 	"Temperature" -> 0.7, 
 	"User", 
 	"APIKey" :> SystemCredential["OPENAI_API_KEY"], 
-	"Model" -> "o1-preview", 
+	"Model" -> "gpt-4o", 
 	"MaxTokens" -> 70000, 
 	"TotalTokens" -> 0, 
 	"Tools" -> {}, 
