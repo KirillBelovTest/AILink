@@ -15,7 +15,10 @@ PacletObject[
       {
         "Kernel",
         "Root" -> "Kernel",
-        "Context" -> {"KirillBelov`AILink`"}
+        "Context" -> {
+          {"KirillBelov`AILink`", "AILink.wl"},
+          {"KirillBelov`AILink`ChatView`", "ChatView.wl"}
+        }
       },
       {
         "Documentation",
@@ -26,6 +29,7 @@ PacletObject[
         "Asset",
         "Assets" -> {
           {"Images", "./Images"},
+          {"Frontend", "./Assets"},
           {"ReadMe", "README.md"}
         }
       }
