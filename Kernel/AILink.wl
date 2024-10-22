@@ -244,6 +244,7 @@ Module[{
 CreateType[AIChatObject, {
 	"Icon" -> $icon, 
 	"Endpoint" -> "https://api.openai.com", 
+	"Route" -> {"v1", "chat", "completions"}, 
 	"Temperature" -> 0.7, 
 	"User", 
 	"APIKey" :> SystemCredential["OPENAI_API_KEY"], 
@@ -322,6 +323,7 @@ With[{image = Rasterize[graphics]},
 
 Options[AIChatCompleteAsync] = {
 	"Endpoint" -> Automatic, 
+	"Route" -> Automatic, 
 	"Temperature" -> Automatic, 
 	"User" -> Automatic, 
 	"APIKey" -> Automatic, 
@@ -333,7 +335,11 @@ Options[AIChatCompleteAsync] = {
 	"ToolHandler" -> Automatic,
 	"Logger" -> Automatic, 
 	"Evaluator" :> $defaultEvaluator, 
-	"ChatCompletedFunction" :> Automatic
+	"ChatCompletedFunction" :> Automatic, 
+	"UserMessageFunction" :> Automatic, 
+	"AssistantMessageFunction" :> Automatic, 
+	"ToolCallFunction" :> Automatic, 
+	"ToolResultFunction" :> Automatic
 }; 
 
 
@@ -467,22 +473,28 @@ Options[AIChatComplete] = Options[AIChatCompleteAsync];
 
 AIChatComplete[chat_AIChatObject, opts: OptionsPattern[]] := 
 Module[{
-	endpoint = ifAuto[OptionValue["Endpoint"], chat["Endpoint"]],  
-	apiKey = ifAuto[OptionValue["APIKey"], chat["APIKey"]], 
-	model = ifAuto[OptionValue["Model"], chat["Model"]], 
-	temperature = ifAuto[OptionValue["Temperature"], chat["Temperature"]], 
-	tools = ifAuto[OptionValue["Tools"], chat["Tools"]], 
-	toolFunction = ifAuto[OptionValue["ToolFunction"], chat["ToolFunction"]], 
-	toolChoice = ifAuto[OptionValue["ToolChoice"], chat["ToolChoice"]], 
-	maxTokens = ifAuto[OptionValue["MaxTokens"], chat["MaxTokens"]], 
-	logger = ifAuto[OptionValue["Logger"], chat["Logger"]],
-	toolHandler = ifAuto[OptionValue["ToolHandler"], chat["ToolHandler"]],
-	evaluator = ifAuto[OptionValue["Evaluator"], chat["Evaluator"]], 
-	chatCompletedFunction = ifAuto[OptionValue["ChatCompletedFunction"], chat["ChatCompletedFunction"]], 
+	endpoint = 			ifAuto[OptionValue["Endpoint"], 			chat["Endpoint"]],  
+	route =             ifAuto[OptionValue["Route"], 				chat["Route"]], 
+	apiKey = 			ifAuto[OptionValue["APIKey"], 				chat["APIKey"]], 
+	model = 			ifAuto[OptionValue["Model"], 				chat["Model"]], 
+	temperature = 		ifAuto[OptionValue["Temperature"], 			chat["Temperature"]], 
+	tools = 			ifAuto[OptionValue["Tools"], 				chat["Tools"]], 
+	toolFunction = 		ifAuto[OptionValue["ToolFunction"], 		chat["ToolFunction"]], 
+	toolChoice = 		ifAuto[OptionValue["ToolChoice"], 			chat["ToolChoice"]], 
+	maxTokens = 		ifAuto[OptionValue["MaxTokens"], 			chat["MaxTokens"]], 
+	logger = 			ifAuto[OptionValue["Logger"], 				chat["Logger"]],
+	toolHandler = 		ifAuto[OptionValue["ToolHandler"], 			chat["ToolHandler"]],
+	evaluator = 		ifAuto[OptionValue["Evaluator"], 			chat["Evaluator"]], 
+	chatCompleted = 	ifAuto[OptionValue["ChatCompletedFunction"],chat["ChatCompletedFunction"]], 
+	userMessageFunc = 	ifAuto[OptionValue["ChatCompletedFunction"],chat["ChatCompletedFunction"]], 
+	assistMessageFunc = ifAuto[OptionValue["ChatCompletedFunction"],chat["ChatCompletedFunction"]], 
+	tollCallFunc = 		ifAuto[OptionValue["ChatCompletedFunction"],chat["ChatCompletedFunction"]], 
+	toolResultFunc = 	ifAuto[OptionValue["ChatCompletedFunction"],chat["ChatCompletedFunction"]], 
+
 	url, headers, messages, requestAssoc, requestBody, request, 
 	response, responseBody, toolCalls
 }, 
-	url = URLBuild[{endpoint, "v1", "chat", "completions"}]; 
+	url = URLBuild[Flatten[{endpoint, route}]]; 
 	
 	headers = {
 		"Authorization" -> "Bearer " <> apiKey, 
@@ -535,7 +547,7 @@ Module[{
 				AIChatComplete[chat, opts]; 
 			]; 
 			
-			Return[chatCompletedFunction[chat]], 
+			Return[chatCompleted[chat]], 
 		(*Else*)
 			$Failed
 		]
