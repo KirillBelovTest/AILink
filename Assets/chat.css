@@ -1,0 +1,27 @@
+.chat-message {
+  padding: 8px;
+  margin: 5px 0;
+  border-radius: 10px;
+  font-size:small;
+  font-family:system-ui;
+  max-width: 40rem;
+}
+
+.chat-user {
+   align-self: flex-end;
+   background-color: #e0f7fa;
+ }
+.chat-assistant {
+  align-self: flex-start;
+  background-color: #fce4ec;
+}
+
+  @keyframes hue-animation {
+  0% {
+    filter: hue-rotate(0deg);
+  }
+  
+  100% {
+    filter: hue-rotate(360deg);
+  }
+}
