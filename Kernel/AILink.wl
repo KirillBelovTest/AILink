@@ -526,6 +526,8 @@ Module[{
 	
 	chat["History"] = Append[chat["History"], request]; 
 
+	convertToReadable[chat]; 
+
 	response = With[{$request = request}, evaluator[URLRead[$request]]]; 
 
 	chat["History"] = Append[chat["History"], response]; 
@@ -540,6 +542,8 @@ Module[{
 			chat["TotalTokens"] = responseAssoc["usage", "total_tokens"]; 
 			Append[chat, Join[responseAssoc[["choices", 1, "message"]], <|"date" -> Now|>]]; 
 
+			convertToReadable[chat]; 
+
 			If[KeyExistsQ[chat["Messages"][[-1]], "tool_calls"],  
 				toolCalls = chat["Messages"][[-1]]["tool_calls"]; 
 				toolResults = Map[toolHandler, toolCalls]; 
@@ -547,6 +551,8 @@ Module[{
 				AIChatComplete[chat, opts]; 
 			]; 
 			
+			convertToReadable[chat]; 
+
 			Return[chatCompleted[chat]], 
 		(*Else*)
 			$Failed
@@ -583,7 +589,7 @@ value;
 
 defaultToolHandler[call_] := 
 With[{
-	$func = ToExpression[call[["function", "name"]]], 
+	$func = nameToFunc[call[["function", "name"]]], 
 	$args = call[["function", "arguments"]]
 }, 
 	Module[{result}, 
@@ -598,7 +604,7 @@ With[{
 		<|
 			"role" -> "tool", 
 			"content" -> result, 
-			"name" -> call[["function", "name"]], 
+			"name" -> funcToName[call[["function", "name"]]], 
 			"tool_call_id" -> call[["id"]], 
 			"date" -> Now
 		|>
@@ -610,7 +616,7 @@ defaultToolFunction[function_Symbol] :=
 <|
 	"type" -> "function", 
 	"function" -> <|
-		"name" -> SymbolName[function], 
+		"name" -> funcToName[function], 
 		"description" -> function::usage, 
 		"parameters" -> <|
 			"type" -> "object", 
@@ -620,7 +626,7 @@ defaultToolFunction[function_Symbol] :=
 					Verbatim[HoldPattern][function[args___]] :> Hold[args]
 				) /. 
 				Verbatim[Pattern][$s_Symbol, Verbatim[Blank][$t_]] :> 
-				ToString[Unevaluated[$s]] -> <|
+				funcToName[$s] -> <|
 					"type" -> Replace[ToLowerCase[ToString[$t]], "real"-> "number"], 
 					"description" -> ToString[Unevaluated[$s]]
 				|>
@@ -639,7 +645,7 @@ assoc;
 
 
 functionChoice[function_Symbol] := 
-<|"type" -> "function", "function" -> <|"name" -> SymbolName[function]|>|>; 
+<|"type" -> "function", "function" -> <|"name" -> funcToName[function]|>|>; 
 
 
 functionChoice[Automatic | "auto"] := 
@@ -654,8 +660,36 @@ functionChoice[_] :=
 "none"; 
 
 
+SetAttributes[funcToName, HoldFirst]; 
+
+
+funcToName[function_Symbol] := 
+StringReplace[Context[function] <> SymbolName[function], "`" -> "_"]; 
+
+
+nameToFunc[name_String] := 
+ToExpression[StringReplace[name, "." -> "_"]];  
+
+
 sanitaze[list_List] := 
 Map[Function[message, KeyDrop[message, "date"]]] @ list; 
+
+
+convertToReadable[text_String] /; StringContainsQ[text, "\[CapitalEth]"] := 
+If[StringContainsQ[#, "\[CapitalEth]"], text, #]& @ 
+FromCharacterCode[ToCharacterCode[text, "ISO8859-1"], "UTF8"]; 
+
+
+convertToReadable[text_String] := text; 
+
+
+convertToReadable[expr_] := ToString[expr]; 
+
+
+convertToReadable[chat_AIChatObject] := (
+	chat["Messages"] = MapAt[convertToReadable, chat["Messages"], {All, "content"}]; 
+	chat
+); 
 
 
 (* ::Section:: *)
