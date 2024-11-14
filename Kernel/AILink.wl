@@ -515,6 +515,8 @@ Module[{
 		requestAssoc["tool_choice"] = functionChoice[toolChoice]
 	]; 
 
+	Global`$requestAssoc = requestAssoc; 
+
 	requestBody = ExportString[requestAssoc, "RawJSON", CharacterEncoding -> "UTF-8"]; 
 	
 	request = HTTPRequest[url, <|
@@ -524,6 +526,8 @@ Module[{
 		"Body" -> requestBody
 	|>]; 
 	
+	logger[<|"Body" -> request, "Event" -> "Request"|>]; 
+
 	chat["History"] = Append[chat["History"], request]; 
 
 	convertToReadable[chat]; 
@@ -604,7 +608,7 @@ With[{
 		<|
 			"role" -> "tool", 
 			"content" -> result, 
-			"name" -> funcToName[call[["function", "name"]]], 
+			"name" -> call[["function", "name"]], 
 			"tool_call_id" -> call[["id"]], 
 			"date" -> Now
 		|>
@@ -626,9 +630,9 @@ defaultToolFunction[function_Symbol] :=
 					Verbatim[HoldPattern][function[args___]] :> Hold[args]
 				) /. 
 				Verbatim[Pattern][$s_Symbol, Verbatim[Blank][$t_]] :> 
-				funcToName[$s] -> <|
+				SymbolName[Unevaluated[$s]] -> <|
 					"type" -> Replace[ToLowerCase[ToString[$t]], "real"-> "number"], 
-					"description" -> ToString[Unevaluated[$s]]
+					"description" -> SymbolName[Unevaluated[$s]]
 				|>
 			)
 		|>
@@ -668,7 +672,7 @@ StringReplace[Context[function] <> SymbolName[function], "`" -> "_"];
 
 
 nameToFunc[name_String] := 
-ToExpression[StringReplace[name, "." -> "_"]];  
+ToExpression[StringReplace[name, "_" -> "`"]];  
 
 
 sanitaze[list_List] := 
