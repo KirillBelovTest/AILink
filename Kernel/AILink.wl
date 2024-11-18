@@ -321,154 +321,8 @@ With[{image = Rasterize[graphics]},
 ]; 
 
 
-Options[AIChatCompleteAsync] = {
-	"Endpoint" -> Automatic, 
-	"Route" -> Automatic, 
-	"Temperature" -> Automatic, 
-	"User" -> Automatic, 
-	"APIKey" -> Automatic, 
-	"Model" -> Automatic, 
-	"MaxTokens" -> Automatic, 
-	"Tools" -> Automatic, 
-	"ToolChoice" -> Automatic, 
-	"ToolFunction" -> Automatic,
-	"ToolHandler" -> Automatic,
-	"Logger" -> Automatic, 
-	"Evaluator" :> $defaultEvaluator, 
-	"ChatCompletedFunction" :> Automatic, 
-	"UserMessageFunction" :> Automatic, 
-	"AssistantMessageFunction" :> Automatic, 
-	"ToolCallFunction" :> Automatic, 
-	"ToolResultFunction" :> Automatic
-}; 
-
-
-AIChatCompleteAsync::err = 
-"`1`"; 
-
-
-AIChatCompleteAsync[chat_AIChatObject, callback: _Function | _Symbol, 
-	secondCall: AIChatComplete | AIChatCompleteAsync: AIChatCompleteAsync, opts: OptionsPattern[]] := 
-Module[{
-	endpoint = ifAuto[OptionValue["Endpoint"], chat["Endpoint"]],  
-	apiKey = ifAuto[OptionValue["APIKey"], chat["APIKey"]], 
-	model = ifAuto[OptionValue["Model"], chat["Model"]], 
-	temperature = ifAuto[OptionValue["Temperature"], chat["Temperature"]], 
-	tools = ifAuto[OptionValue["Tools"], chat["Tools"]], 
-	toolFunction = ifAuto[OptionValue["ToolFunction"], chat["ToolFunction"]], 
-	toolChoice = ifAuto[OptionValue["ToolChoice"], chat["ToolChoice"]], 
-	maxTokens = ifAuto[OptionValue["MaxTokens"], chat["MaxTokens"]], 
-	logger = ifAuto[OptionValue["Logger"], chat["Logger"]],
-	toolHandler = ifAuto[OptionValue["ToolHandler"], chat["ToolHandler"]],
-	evaluator = ifAuto[OptionValue["Evaluator"], chat["Evaluator"]],
-	url, headers, messages, requestAssoc, requestBody, request
-}, 
-	url = URLBuild[{endpoint, "v1", "chat", "completions"}]; 
-	
-	headers = {
-		"Authorization" -> "Bearer " <> apiKey, 
-		"X-API-KEY" -> apiKey
-	}; 
-	
-	messages = chat["Messages"]; 
-	
-	requestAssoc = <|
-		"model" -> model, 
-		"messages" -> sanitaze[messages], 
-		"temperature" -> temperature
-	|>; 
-
-	toolsProp = toolFunction[tools]; 
-	If[Length[toolsProp] > 0, 
-		requestAssoc["tools"] = toolsProp; 
-		requestAssoc["tool_choice"] = functionChoice[toolChoice]
-	]; 
-
-	Global`$requestAssoc = requestAssoc; 
-
-	requestBody = ExportString[requestAssoc, "RawJSON", CharacterEncoding -> "UTF-8"]; 
-	
-	request = HTTPRequest[url, <|
-		Method -> "POST", 
-		"ContentType" -> "application/json", 
-		"Headers" -> headers, 
-		"Body" -> requestBody
-	|>]; 
-	
-	chat["History"] = Append[chat["History"], request]; 
-
-	With[{$request = request, $logger = logger, $requestAssoc = requestAssoc}, 
-		URLSubmit[$request, 
-			HandlerFunctions -> <|
-				"HeadersReceived" -> Function[$logger[<|"Body" -> $requestAssoc, "Event" -> "RequestBody"|>]], 
-				"BodyReceived" -> Function[Module[{responseBody, responseAssoc}, 
-					chat["History"] = Append[chat["History"], #]; 
-					If[#["StatusCode"] === 200, 
-						responseBody = ExportString[#["Body"], "String"]; 
-						responseAssoc = ImportString[responseBody, "RawJSON", CharacterEncoding -> "UTF-8"]; 
-
-						$logger[<|"Body" -> responseAssoc, "Event" -> "ResponseBody"|>]; 
-
-						If[AssociationQ[responseAssoc], 
-							chat["ChatId"] = responseAssoc["id"]; 
-							chat["TotalTokens"] = responseAssoc["usage", "total_tokens"]; 
-							Append[chat, Join[responseAssoc[["choices", 1, "message"]], <|"date" -> Now|>] ]; 
-
-							If[KeyExistsQ[chat["Messages"][[-1]], "tool_calls"], 
-								Module[{
-									$result = toolHandler[chat["Messages"][[-1]]]
-								}, 
-									If[StringQ[$result], 
-										Append[chat, <|
-											"role" -> "tool", 
-											"content" -> $result, 
-											"name" -> chat["Messages"][[-1, "tool_calls", 1, "function", "name"]], 
-											"tool_call_id" -> chat["Messages"][[-1, "tool_calls", 1, "id"]],
-											"date" -> Now
-										|>]; 
-										If[secondCall === AIChatComplete, 
-											secondCall[chat, opts], 
-										(*Else*)
-											secondCall[chat, callback, secondCall, opts]
-										], 
-									(*Else*)
-										Message[AIChatCompleteAsync::err, $result]; $Failed		
-									];
-								], 
-								callback[chat], 
-							(*Else*)
-								Message[AIChatCompleteAsync::err, responseAssoc]; $Failed
-							], 
-						(*Else*)
-							Message[AIChatCompleteAsync::err, responseAssoc]; $Failed
-						], 
-						$Failed
-					]
-				]]
-			|>, 
-			HandlerFunctionsKeys -> {"StatusCode", "Body", "Headers"}, 
-			TimeConstraint -> 10 * 60
-		]
-	]
-]; 
-
-
-AIChatCompleteAsync[chat_AIChatObject, prompt: promptPattern, callback: _Symbol | _Function, 
-	secondCall: AIChatComplete | AIChatCompleteAsync: AIChatCompleteAsync, opts: OptionsPattern[]] := (
-	Append[chat, prompt]; 
-	AIChatCompleteAsync[chat, callback, secondCall, opts]
-); 
-
-
-AIChatCompleteAsync[prompt: promptPattern, callback: _Symbol | _Function, 
-	secondCall: AIChatComplete | AIChatCompleteAsync: AIChatCompleteAsync, opts: OptionsPattern[]] := 
-With[{chat = AIChatObject[]}, 
-	Append[chat, prompt]; 
-	AIChatCompleteAsync[chat, callback, secondCall, opts]
-]; 
-
-
-Options[AIChatComplete] = Options[AIChatCompleteAsync]; 
+Options[AIChatComplete] = 
+KeyValueMap[# -> Automatic&, <|Options[AIChatObject]|>]; 
 
 
 AIChatComplete[chat_AIChatObject, opts: OptionsPattern[]] := 
@@ -481,15 +335,15 @@ Module[{
 	tools = 			ifAuto[OptionValue["Tools"], 				chat["Tools"]], 
 	toolFunction = 		ifAuto[OptionValue["ToolFunction"], 		chat["ToolFunction"]], 
 	toolChoice = 		ifAuto[OptionValue["ToolChoice"], 			chat["ToolChoice"]], 
-	maxTokens = 		ifAuto[OptionValue["MaxTokens"], 			chat["MaxTokens"]], 
-	logger = 			ifAuto[OptionValue["Logger"], 				chat["Logger"]],
-	toolHandler = 		ifAuto[OptionValue["ToolHandler"], 			chat["ToolHandler"]],
-	evaluator = 		ifAuto[OptionValue["Evaluator"], 			chat["Evaluator"]], 
-	chatCompleted = 	ifAuto[OptionValue["ChatCompletedFunction"],chat["ChatCompletedFunction"]], 
-	userMessageFunc = 	ifAuto[OptionValue["ChatCompletedFunction"],chat["ChatCompletedFunction"]], 
-	assistMessageFunc = ifAuto[OptionValue["ChatCompletedFunction"],chat["ChatCompletedFunction"]], 
-	tollCallFunc = 		ifAuto[OptionValue["ChatCompletedFunction"],chat["ChatCompletedFunction"]], 
-	toolResultFunc = 	ifAuto[OptionValue["ChatCompletedFunction"],chat["ChatCompletedFunction"]], 
+	maxTokens =					ifAuto[OptionValue["MaxTokens"], 			chat["MaxTokens"]], 
+	logger = 				    ifAuto[OptionValue["Logger"], 				chat["Logger"]],
+	toolHandler = 			    ifAuto[OptionValue["ToolHandler"], 			chat["ToolHandler"]],
+	evaluator = 			    ifAuto[OptionValue["Evaluator"], 			chat["Evaluator"]], 
+	chatCompletedFunction = 	ifAuto[OptionValue["ChatCompletedFunction"],chat["ChatCompletedFunction"]], 
+	userMessageFunction = 	ifAuto[OptionValue["UserMessageFunction"],chat["UserMessageFunction"]], 
+	assistMessageFunction = ifAuto[OptionValue["AssistMessageFunction"],chat["AssistMessageFunction"]], 
+	toolCallFunction = 		ifAuto[OptionValue["ToolCallFunction"],chat["ToolCallFunction"]], 
+	toolResultFunction = 	ifAuto[OptionValue["ToolResultFunction"],chat["ToolResultFunction"]], 
 
 	url, headers, messages, requestAssoc, requestBody, request, 
 	response, responseBody, toolCalls
