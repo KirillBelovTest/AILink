@@ -1,0 +1,162 @@
+(* Content-type: application/vnd.wolfram.cdf.text *)
+
+(*** Wolfram CDF File ***)
+(* http://www.wolfram.com/cdf *)
+
+(* CreatedBy='Wolfram 14.1' *)
+
+(*************************************************************************)
+(*                                                                       *)
+(*                                                                       *)
+(*  This file was created under the Wolfram Enterprise licensing terms.  *)
+(*                                                                       *)
+(*       For additional information concerning CDF licensing see:        *)
+(*                                                                       *)
+(*        www.wolfram.com/cdf/adopting-cdf/licensing-options.html        *)
+(*                                                                       *)
+(*                                                                       *)
+(*                                                                       *)
+(*************************************************************************)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[      1060,         20]
+NotebookDataLength[      5211,        141]
+NotebookOptionsPosition[      5035,        129]
+NotebookOutlinePosition[      5443,        145]
+CellTagsIndexPosition[      5400,        142]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[{
+ RowBox[{"<<", "KirillBelov`CSockets`"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"server", " ", "=", " ", 
+    RowBox[{"CSocketOpen", "[", "8080", "]"}]}], ";"}], 
+  " "}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"listener", " ", "=", " ", 
+    RowBox[{"SocketListen", "[", 
+     RowBox[{"server", ",", " ", "func"}], "]"}]}], ";"}], " "}]}], "Input",
+ CellChangeTimes->{{3.9417844119043083`*^9, 3.941784423546547*^9}, {
+  3.9417855769935474`*^9, 3.9417856057458935`*^9}, {3.9418048836063824`*^9, 
+  3.9418048958086624`*^9}},
+ CellLabel->"In[1]:=",ExpressionUUID->"13b602ec-b0a8-984c-8279-a7f2860ec010"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"timing", " ", "=", " ", 
+    RowBox[{"CreateDataStructure", "[", "\"\<DynamicArray\>\"", "]"}]}], 
+   ";"}], " "}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"func", " ", "=", " ", 
+    RowBox[{"Function", "[", 
+     RowBox[{
+      RowBox[{"timing", "[", 
+       RowBox[{"\"\<Append\>\"", ",", " ", 
+        RowBox[{"AbsoluteTime", "[", "]"}]}], "]"}], ";"}], "]"}]}], ";"}], 
+  " "}]}], "Input",
+ CellChangeTimes->{{3.9417853499495506`*^9, 3.941785369267748*^9}, {
+  3.9417856121168823`*^9, 3.94178562405777*^9}},
+ CellLabel->"In[15]:=",ExpressionUUID->"e3fdcd37-6e6e-5548-a6e1-e43b9a2bfac7"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Total", "[", 
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{"1", ",", " ", 
+     RowBox[{"-", "1"}]}], "}"}], " ", "*", " ", 
+   RowBox[{
+    RowBox[{"timing", "[", "\"\<Elements\>\"", "]"}], "[", 
+    RowBox[{"[", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"-", "1"}], ",", " ", "1"}], "}"}], "]"}], "]"}]}], 
+  "]"}]], "Input",
+ CellChangeTimes->{{3.9417854355654354`*^9, 3.9417854690744915`*^9}},
+ CellLabel->"In[18]:=",ExpressionUUID->"1f24df56-ea15-f54a-944e-ae314fe9877c"],
+
+Cell[BoxData["0.002006`4.75387592218037"], "Output",
+ CellChangeTimes->{{3.941785452959692*^9, 3.9417854693167496`*^9}, 
+   3.9417856346712666`*^9, {3.9417863616297607`*^9, 3.9417863714201527`*^9}, {
+   3.941786449239483*^9, 3.94178645949465*^9}, {3.9417865270927773`*^9, 
+   3.941786540523905*^9}, {3.941786628242874*^9, 3.9417866397628*^9}, 
+   3.9418045669170055`*^9, {3.9418049400430946`*^9, 3.9418049798482113`*^9}},
+ CellLabel->"Out[18]=",ExpressionUUID->"962bd9d9-f84c-c24e-903e-67a6200db153"]
+}, Open  ]],
+
+Cell[BoxData[
+ RowBox[{"Quit", "[", "]"}]], "Input",
+ CellChangeTimes->{{3.9417864717818565`*^9, 3.9417864741633472`*^9}},
+ CellLabel->"In[16]:=",ExpressionUUID->"ed3da959-5f4b-0146-ab5a-bf2b4171d32f"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"20", "/", "0.002006`4.75387592218037"}]], "Input",
+ CellChangeTimes->{{3.941804651997114*^9, 3.9418046547530155`*^9}, 
+   3.941804990258465*^9},
+ CellLabel->"In[19]:=",ExpressionUUID->"62924f2f-b285-a34f-a71b-89ff80b9b789"],
+
+Cell[BoxData["9970.0897308075771447139`4.75387592218037"], "Output",
+ CellChangeTimes->{3.9418046550370255`*^9, 3.9418049911475945`*^9},
+ CellLabel->"Out[19]=",ExpressionUUID->"036bc97b-b4b0-b345-bf43-c8663c39405f"]
+}, Open  ]],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"server2", " ", "=", " ", 
+    RowBox[{"CSocketOpen", "[", "8082", "]"}]}], ";"}], 
+  " "}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"listener", " ", "=", " ", 
+    RowBox[{"SocketListen", "[", 
+     RowBox[{"server2", ",", " ", "func"}], "]"}]}], ";"}], " "}]}], "Input",
+ CellChangeTimes->{{3.9418047449053097`*^9, 3.941804756580206*^9}, 
+   3.9418048110575657`*^9},
+ CellLabel->"In[23]:=",ExpressionUUID->"787b1ba7-6c3e-5247-8eed-731f4b8d303d"]
+},
+WindowSize->{978.75, 486},
+WindowMargins->{{Automatic, -5.25}, {Automatic, 0}},
+FrontEndVersion->"14.1 for Microsoft Windows (64-bit) (July 16, 2024)",
+StyleDefinitions->"ReverseColor.nb",
+ExpressionUUID->"d8fdec5f-07ed-ee45-8e97-b36adede9cf5"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[1460, 33, 651, 15, 66, "Input",ExpressionUUID->"13b602ec-b0a8-984c-8279-a7f2860ec010"],
+Cell[2114, 50, 655, 17, 47, "Input",ExpressionUUID->"e3fdcd37-6e6e-5548-a6e1-e43b9a2bfac7"],
+Cell[CellGroupData[{
+Cell[2794, 71, 503, 14, 28, "Input",ExpressionUUID->"1f24df56-ea15-f54a-944e-ae314fe9877c"],
+Cell[3300, 87, 500, 6, 32, "Output",ExpressionUUID->"962bd9d9-f84c-c24e-903e-67a6200db153"]
+}, Open  ]],
+Cell[3815, 96, 201, 3, 28, "Input",ExpressionUUID->"ed3da959-5f4b-0146-ab5a-bf2b4171d32f"],
+Cell[CellGroupData[{
+Cell[4041, 103, 247, 4, 28, "Input",ExpressionUUID->"62924f2f-b285-a34f-a71b-89ff80b9b789"],
+Cell[4291, 109, 215, 2, 32, "Output",ExpressionUUID->"036bc97b-b4b0-b345-bf43-c8663c39405f"]
+}, Open  ]],
+Cell[4521, 114, 510, 13, 47, "Input",ExpressionUUID->"787b1ba7-6c3e-5247-8eed-731f4b8d303d"]
+}
+]
+*)
+
