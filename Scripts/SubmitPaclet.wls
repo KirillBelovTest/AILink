@@ -17,6 +17,3 @@ If[Head[$FrontEnd] === FrontEndObject,
 
 
 SubmitPaclet[FileNameJoin[{Directory[], "build", "KirillBelov__AILink"}]]
-
-
-
