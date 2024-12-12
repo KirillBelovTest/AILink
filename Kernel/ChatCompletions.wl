@@ -48,18 +48,27 @@ CreateType[AIChatObject, {
     "ToolConverter" :> toolConvert, 
     "ToolEvaluator" :> toolEvaluate, 
     "History" :> {}, 
-    "Task" :> Null
+    "Task" :> Null, 
+    "MessageHandler" :> messageHandler
 }]; 
 
 
 (* chat["Messages"] = {<|msg1|>, <|msg2|>, ...} *)
 AIChatObject /: Set[chat_AIChatObject["messages"], messages: {___Association}] := 
-chat["Chat", "messages"] = messages; 
+(
+    chat["Chat", "messages"] = messages; 
+    Map[(chat["MessageHandler"][chat, #])&, messages]; 
+    messages
+); 
 
 
 (* chat["Messages"] += <|msg1|> *)
 AIChatObject /: AddTo[chat_AIChatObject["messages"], message_Association] := 
-chat["Chat", "messages"] = Append[chat["Chat", "messages"], message]; 
+(
+    chat["Chat", "messages"] = Append[chat["Chat", "messages"], message]; 
+    chat["MessageHandler"][chat, message]; 
+    message
+); 
 
 
 (* chat["Messages"] += "message" *)
@@ -112,7 +121,10 @@ Module[{
 
     If[toolCallQ[chat], 
         toolResultMessages = chat["ToolEvaluator"][chat]; 
-        Map[(chat["messages"] += #)&, toolResultMessages]; 
+        Map[(
+            chat["messages"] += #; 
+            chat["MessageHandler"][chat, #]
+        )&, toolResultMessages]; 
     ];
 
     request = chatCompletionRequest[chat]; 
@@ -127,8 +139,9 @@ Module[{
         Return[chat]; 
     ];
 
-    completionMessage = completion[["choices", 1, "message"]]; 
+    completionMessage = completion[["choices", 1, "message"]];  
     chat["messages"] += completionMessage; 
+    chat["MessageHandler"][chat, completionMessage]; 
 
     AIChatComplete[chat]
 ]; 
@@ -143,18 +156,13 @@ Module[{
         Return[chat]
     ];
 
-    If[toolCallQ[chat], 
-        toolResultMessages = chat["ToolEvaluator"][chat]; 
-        Map[(chat["messages"] += #)&, toolResultMessages]; 
-    ];
-
     request = chatCompletionRequest[chat]; 
 
     task = With[{$request = request}, 
         AsyncEvaluate[CloudEvaluate[URLRead[$request]], 
             Function[response, 
                 Module[{
-                    completion, completionMessage
+                    completion, completionMessage, toolResultMessages
                 }, 
                     chat["History"] = Append[chat["History"], <|"request" -> $request, "response" -> response|>]; 
 
@@ -167,8 +175,20 @@ Module[{
 
                     completionMessage = completion[["choices", 1, "message"]]; 
                     chat["messages"] += completionMessage; 
+                    chat["MessageHandler"][chat, completionMessage];    
 
-                    AIChatCompleteAsync[chat]
+                    If[toolCallQ[chat], 
+                        Block[{toolEvaluator = chat["ToolEvaluator"]}, 
+                            AsyncEvaluate[
+                                toolEvaluator[chat],  
+                                Function[toolResultMessages, 
+                                    Map[(
+                                        chat["messages"] += #; 
+                                        chat["MessageHandler"][chat, #]
+                                    )&, toolResultMessages]
+                            ]
+                        ]
+                    ]; 
                 ]
             ]
         ]; 
