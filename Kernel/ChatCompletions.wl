@@ -161,9 +161,7 @@ Module[{
     task = With[{$request = request}, 
         AsyncEvaluate[CloudEvaluate[URLRead[$request]], 
             Function[response, 
-                Module[{
-                    completion, completionMessage, toolResultMessages
-                }, 
+                Module[{completion, completionMessage, toolResultMessages}, 
                     chat["History"] = Append[chat["History"], <|"request" -> $request, "response" -> response|>]; 
 
                     completion = ImportString[response["Body"], "RawJSON", CharacterEncoding -> "UTF-8"]; 
@@ -185,7 +183,10 @@ Module[{
                                     Map[(
                                         chat["messages"] += #; 
                                         chat["MessageHandler"][chat, #]
-                                    )&, toolResultMessages]
+                                    )&, toolResultMessages]; 
+                                    
+                                    AIChatCompleteAsync[chat]
+                                ]
                             ]
                         ]
                     ]; 
