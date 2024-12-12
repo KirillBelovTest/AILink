@@ -23,10 +23,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[      1060,         20]
-NotebookDataLength[      5602,        143]
-NotebookOptionsPosition[      6148,        142]
-NotebookOutlinePosition[      6550,        158]
-CellTagsIndexPosition[      6507,        155]
+NotebookDataLength[     14085,        318]
+NotebookOptionsPosition[     14222,        311]
+NotebookOutlinePosition[     14624,        327]
+CellTagsIndexPosition[     14581,        324]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -39,6 +39,10 @@ Cell[BoxData[{
   RowBox[{
    RowBox[{"SetDirectory", "[", 
     RowBox[{"NotebookDirectory", "[", "]"}], "]"}], ";"}], " "}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"Get", "[", "\"\<KirillBelov`Internal`\>\"", "]"}], ";"}], 
+  " "}], "\n", 
  RowBox[{
   RowBox[{
    RowBox[{"Get", "[", "\"\<KirillBelov`AILink`ChatCompletions`\>\"", "]"}], 
@@ -69,56 +73,20 @@ Cell[BoxData[{
 \:043e\:0432\:0435\>\""}], ";"}], " "}], "\n", 
  RowBox[{
   RowBox[{
-   RowBox[{
-    RowBox[{"chat", "[", "\"\<tools\>\"", "]"}], " ", "=", " ", 
-    RowBox[{"{", 
-     RowBox[{"<|", 
-      RowBox[{
-       RowBox[{"\"\<type\>\"", " ", "->", " ", "\"\<function\>\""}], ",", " ",
-        "\n", "\t", 
-       RowBox[{"\"\<function\>\"", " ", "->", " ", 
-        RowBox[{"<|", "\n", "\t\t", 
-         RowBox[{
-          RowBox[{
-          "\"\<name\>\"", " ", "->", " ", "\"\<Global__wheather\>\""}], ",", 
-          " ", "\n", "\t\t", 
-          RowBox[{
-          "\"\<description\>\"", " ", "->", " ", 
-           "\"\<Get the current weather in a given location\>\""}], ",", " ", 
-          "\n", "\t\t", 
-          RowBox[{"\"\<parameters\>\"", " ", "->", " ", 
-           RowBox[{"<|", "\n", "\t\t\t", 
-            RowBox[{
-             RowBox[{"\"\<type\>\"", " ", "->", " ", "\"\<object\>\""}], ",", 
-             " ", "\n", "\t\t\t", 
-             RowBox[{"\"\<properties\>\"", " ", "->", " ", 
-              RowBox[{"<|", "\n", "\t\t\t\t", 
-               RowBox[{"\"\<location\>\"", " ", "->", " ", 
-                RowBox[{"<|", "\n", "\t\t\t\t\t", 
-                 RowBox[{
-                  RowBox[{"\"\<type\>\"", " ", "->", " ", "\"\<string\>\""}], 
-                  ",", " ", "\n", "\t\t\t\t\t", 
-                  RowBox[{
-                  "\"\<description\>\"", "->", " ", "\"\<the city\>\""}]}], 
-                 "\n", "\t\t\t\t", "|>"}]}], "\n", "\t\t\t", "|>"}]}]}], "\n",
-             "\t\t", "|>"}]}]}], "\n", "\t", "|>"}]}]}], "\n", "|>"}], 
-     "}"}]}], ";"}], " "}], "\n", 
+   RowBox[{"wheather", "::", "usage"}], " ", "=", " ", 
+   "\"\<wheather[city] current wheather in specific city only in \
+English.\>\""}], ";"}], "\n", 
  RowBox[{
   RowBox[{
    RowBox[{
-    RowBox[{"wheather", "[", "_", "]"}], " ", ":=", " ", 
+    RowBox[{"wheather", "[", "city_String", "]"}], " ", ":=", " ", 
     "\"\<-7 \:0433\:0440\:0430\:0434\:0443\:0441\:043e\:0432 \:0426\:0435\
 \:043b\:044c\:0441\:0438\:044f\>\""}], ";"}], " "}], "\n", 
  RowBox[{
   RowBox[{
-   RowBox[{"AIChatComplete", "[", "chat", "]"}], ";"}], " "}], "\n", 
- RowBox[{
-  RowBox[{
    RowBox[{
-    RowBox[{"chat", "[", "\"\<messages\>\"", "]"}], " ", "+=", " ", 
-    "\"\<\:0410 \:0432 \
-\:042d\:043d\:0433\:0435\:043b\:044c\:0441\:0435?\>\""}], ";"}], 
-  " "}]}], "Code",
+    RowBox[{"chat", "[", "\"\<tools\>\"", "]"}], " ", "=", " ", 
+    RowBox[{"{", "wheather", "}"}]}], ";"}], " "}]}], "Code",
  CellChangeTimes->{{3.9428005809971066`*^9, 3.9428006038303337`*^9}, {
    3.9428006371847897`*^9, 3.9428006542645435`*^9}, {3.9428211549678497`*^9, 
    3.9428211583110313`*^9}, {3.942822100673092*^9, 3.9428221047661304`*^9}, {
@@ -136,9 +104,210 @@ Cell[BoxData[{
    3.9429038024189396`*^9, 3.942903805914213*^9}, {3.9429038784199753`*^9, 
    3.9429038802992516`*^9}, {3.9429041851850796`*^9, 3.942904185497532*^9}, {
    3.942906121755499*^9, 3.9429061217942944`*^9}, 3.9429074711059*^9, {
-   3.9429079680763874`*^9, 3.942907991736891*^9}},
+   3.9429079680763874`*^9, 3.942907991736891*^9}, {3.942968740153761*^9, 
+   3.942968763054678*^9}, {3.9429738415168247`*^9, 3.9429738452527485`*^9}, {
+   3.942990151030138*^9, 3.9429902557554054`*^9}, {3.942990419989584*^9, 
+   3.942990501923046*^9}, 3.942990554461628*^9, 3.9429914385632515`*^9},
  CellLabel->
-  "In[897]:=",ExpressionUUID->"c527f267-0cda-6c42-a637-d529ad4a9bf1"]
+  "In[211]:=",ExpressionUUID->"c527f267-0cda-6c42-a637-d529ad4a9bf1"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"AIChatCompleteAsync", "[", "chat", "]"}], ";"}], " "}], "\n", 
+ RowBox[{"chat", "[", "\"\<Chat\>\"", "]"}]}], "Code",
+ CellChangeTimes->{{3.9429905098524723`*^9, 3.942990518732416*^9}, 
+   3.9429905767286415`*^9, {3.9429918806992874`*^9, 3.9429918812952366`*^9}},
+ CellLabel->
+  "In[221]:=",ExpressionUUID->"63287ad6-82e0-4e41-b85e-2d2eb9160bd4"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{
+   TagBox["HTTPRequest",
+    "SummaryHead"], "[", 
+   DynamicModuleBox[{Typeset`open$$ = False, Typeset`embedState$$ = "Ready"}, 
+    TemplateBox[{
+      PaneSelectorBox[{False -> GridBox[{{
+            GraphicsBox[{
+              RGBColor[1, 0.5, 0], 
+              DiskBox[{0, 0}], 
+              InsetBox[
+               FormBox[
+                StyleBox["\"POST\"", 
+                 Directive[9, 
+                  GrayLevel[1], Bold], StripOnInput -> False], 
+                TraditionalForm], 
+               Scaled[{0.53, 0.48}]]}, ImageSize -> 
+             Dynamic[{
+               Automatic, (3 CurrentValue["FontCapHeight"])/
+                AbsoluteCurrentValue[Magnification]}], Background -> None], 
+            GridBox[{{
+               RowBox[{
+                 TagBox["\"URL: \"", "SummaryItemAnnotation"], 
+                 "\[InvisibleSpace]", 
+                 TagBox[
+                  TemplateBox[{
+                    TagBox[
+                    "\"https://api.openai.com/v1/chat/completions\"", Short], 
+                    "https://api.openai.com/v1/chat/completions"}, 
+                   "HyperlinkURL"], "SummaryItem"]}]}, {
+               RowBox[{
+                 TagBox["\"ContentType: \"", "SummaryItemAnnotation"], 
+                 "\[InvisibleSpace]", 
+                 TagBox["\"application/json\"", "SummaryItem"]}]}}, 
+             GridBoxAlignment -> {
+              "Columns" -> {{Left}}, "Rows" -> {{Automatic}}}, AutoDelete -> 
+             False, GridBoxItemSize -> {
+              "Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}, 
+             GridBoxSpacings -> {"Columns" -> {{2}}, "Rows" -> {{Automatic}}},
+              BaseStyle -> {
+              ShowStringCharacters -> False, NumberMarks -> False, 
+               PrintPrecision -> 3, ShowSyntaxStyles -> False}]}}, 
+          GridBoxAlignment -> {"Columns" -> {{Left}}, "Rows" -> {{Top}}}, 
+          AutoDelete -> False, 
+          GridBoxItemSize -> {
+           "Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}, 
+          BaselinePosition -> {1, 1}], True -> GridBox[{{
+            GraphicsBox[{
+              RGBColor[1, 0.5, 0], 
+              DiskBox[{0, 0}], 
+              InsetBox[
+               FormBox[
+                StyleBox["\"POST\"", 
+                 Directive[9, 
+                  GrayLevel[1], Bold], StripOnInput -> False], 
+                TraditionalForm], 
+               Scaled[{0.53, 0.48}]]}, ImageSize -> 
+             Dynamic[{
+               Automatic, (3 CurrentValue["FontCapHeight"])/
+                AbsoluteCurrentValue[Magnification]}], Background -> None], 
+            GridBox[{{
+               RowBox[{
+                 TagBox["\"URL: \"", "SummaryItemAnnotation"], 
+                 "\[InvisibleSpace]", 
+                 TagBox[
+                  TemplateBox[{
+                    TagBox[
+                    "\"https://api.openai.com/v1/chat/completions\"", Short], 
+                    "https://api.openai.com/v1/chat/completions"}, 
+                   "HyperlinkURL"], "SummaryItem"]}]}, {
+               RowBox[{
+                 TagBox["\"ContentType: \"", "SummaryItemAnnotation"], 
+                 "\[InvisibleSpace]", 
+                 TagBox["\"application/json\"", "SummaryItem"]}]}}, 
+             GridBoxAlignment -> {
+              "Columns" -> {{Left}}, "Rows" -> {{Automatic}}}, AutoDelete -> 
+             False, GridBoxItemSize -> {
+              "Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}, 
+             GridBoxSpacings -> {"Columns" -> {{2}}, "Rows" -> {{Automatic}}},
+              BaseStyle -> {
+              ShowStringCharacters -> False, NumberMarks -> False, 
+               PrintPrecision -> 3, ShowSyntaxStyles -> False}]}}, 
+          GridBoxAlignment -> {"Columns" -> {{Left}}, "Rows" -> {{Top}}}, 
+          AutoDelete -> False, 
+          GridBoxItemSize -> {
+           "Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}, 
+          BaselinePosition -> {1, 1}]}, 
+       Dynamic[Typeset`open$$], ImageSize -> Automatic]},
+     "SummaryPanel"],
+    DynamicModuleValues:>{}], "]"}],
+  HTTPRequest[
+  "https://api.openai.com/v1/chat/completions", <|
+   Method -> "POST", "ContentType" -> "application/json", 
+    "Headers" -> {
+     "Authorization" -> 
+      "Bearer sk-proj-ybyNavnFLE-gZzkGtNUA6RRmEIT_wIS4WPcJ-\
+atUV4wo9f1DDYaPnjHk6BT3BlbkFJltNilwEf1s9_\
+SxfzCjJuj23MTxIRcz0elP28HL5XgguQCcyAPcGFqMF40A"}, "Body" -> 
+    "{\n\t\"model\":\"gpt-4o\",\n\t\"temperature\":1.0,\n\t\"messages\":[\n\t\
+\t{\n\t\t\t\"role\":\"system\",\n\t\t\t\"content\":\"\[CapitalEth]\.9e\
+\[CapitalEth]\[PlusMinus]\[CapitalNTilde]\.89\[CapitalEth]\[Degree]\
+\[CapitalEth]\[Micro]\[CapitalEth]\.bc\[CapitalNTilde]\.81\[CapitalNTilde]\.8f\
+ \[CapitalEth]\.bd\[CapitalEth]\[Degree] \[CapitalNTilde]\.80\[CapitalNTilde]\
+\.83\[CapitalNTilde]\.81\[CapitalNTilde]\.81\[CapitalEth]\.ba\[CapitalEth]\.be\
+\[CapitalEth]\.bc\"\n\t\t},\n\t\t{\n\t\t\t\"role\":\"user\",\n\t\t\t\"content\
+\":\"\[CapitalEth]\[DownQuestion]\[CapitalNTilde]\.80\[CapitalEth]\[Cedilla]\
+\[CapitalEth]\.b2\[CapitalEth]\[Micro]\[CapitalNTilde]\.82, \[CapitalEth]\.ba\
+\[CapitalEth]\[Degree]\[CapitalEth]\.ba\[CapitalEth]\[Degree]\[CapitalNTilde]\
+\.8f \[CapitalEth]\[DownQuestion]\[CapitalEth]\.be\[CapitalEth]\.b3\
+\[CapitalEth]\.be\[CapitalEth]\.b4\[CapitalEth]\[Degree] \[CapitalEth]\.b2 \
+\[CapitalEth]\[DownExclamation]\[CapitalEth]\[Degree]\[CapitalNTilde]\.80\
+\[CapitalEth]\[Degree]\[CapitalNTilde]\.82\[CapitalEth]\.be\[CapitalEth]\.b2\
+\[CapitalEth]\[Micro]\"\n\t\t}\n\t],\n\t\"tools\":[\n\t\t{\n\t\t\t\
+\"type\":\"function\",\n\t\t\t\"function\":{\n\t\t\t\t\
+\"name\":\"Global__wheather\",\n\t\t\t\t\"description\":\"wheather[city] \
+current wheather in specific city only in English.\",\n\t\t\t\t\
+\"parameters\":{\n\t\t\t\t\t\"type\":\"object\",\n\t\t\t\t\t\"properties\":{\n\
+\t\t\t\t\t\t\"city\":{\n\t\t\t\t\t\t\t\"type\":\"string\"\n\t\t\t\t\t\t}\n\t\t\
+\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t]\n}"|>],
+  Editable->False,
+  SelectWithContents->True,
+  Selectable->False]], "Echo",
+ CellChangeTimes->{
+  3.9429918831136074`*^9},ExpressionUUID->"2facae33-0276-f147-890f-\
+f31729ecb0aa"],
+
+Cell[BoxData[
+ RowBox[{"\[LeftAssociation]", 
+  RowBox[{
+   RowBox[{"\<\"model\"\>", "\[Rule]", "\<\"gpt-4o\"\>"}], ",", 
+   RowBox[{"\<\"temperature\"\>", "\[Rule]", "1.`"}], ",", 
+   RowBox[{"\<\"messages\"\>", "\[Rule]", 
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"\[LeftAssociation]", 
+       RowBox[{
+        RowBox[{"\<\"role\"\>", "\[Rule]", "\<\"system\"\>"}], ",", 
+        RowBox[{"\<\"content\"\>", 
+         "\[Rule]", "\<\"\:041e\:0431\:0449\:0430\:0435\:043c\:0441\:044f \
+\:043d\:0430 \:0440\:0443\:0441\:0441\:043a\:043e\:043c\"\>"}]}], 
+       "\[RightAssociation]"}], ",", 
+      RowBox[{"\[LeftAssociation]", 
+       RowBox[{
+        RowBox[{"\<\"role\"\>", "\[Rule]", "\<\"user\"\>"}], ",", 
+        RowBox[{"\<\"content\"\>", 
+         "\[Rule]", "\<\"\:043f\:0440\:0438\:0432\:0435\:0442, \:043a\:0430\
+\:043a\:0430\:044f \:043f\:043e\:0433\:043e\:0434\:0430 \:0432 \:0421\:0430\
+\:0440\:0430\:0442\:043e\:0432\:0435\"\>"}]}], "\[RightAssociation]"}]}], 
+     "}"}]}], ",", 
+   RowBox[{"\<\"tools\"\>", "\[Rule]", 
+    RowBox[{"{", 
+     RowBox[{"\[LeftAssociation]", 
+      RowBox[{
+       RowBox[{"\<\"type\"\>", "\[Rule]", "\<\"function\"\>"}], ",", 
+       RowBox[{"\<\"function\"\>", "\[Rule]", 
+        RowBox[{"\[LeftAssociation]", 
+         RowBox[{
+          RowBox[{"\<\"name\"\>", "\[Rule]", "\<\"Global__wheather\"\>"}], 
+          ",", 
+          
+          RowBox[{"\<\"description\"\>", 
+           "\[Rule]", "\<\"wheather[city] current wheather in specific city \
+only in English.\"\>"}], ",", 
+          RowBox[{"\<\"parameters\"\>", "\[Rule]", 
+           RowBox[{"\[LeftAssociation]", 
+            RowBox[{
+             RowBox[{"\<\"type\"\>", "\[Rule]", "\<\"object\"\>"}], ",", 
+             RowBox[{"\<\"properties\"\>", "\[Rule]", 
+              RowBox[{"\[LeftAssociation]", 
+               RowBox[{"\<\"city\"\>", "\[Rule]", 
+                RowBox[{"\[LeftAssociation]", 
+                 RowBox[{"\<\"type\"\>", "\[Rule]", "\<\"string\"\>"}], 
+                 "\[RightAssociation]"}]}], "\[RightAssociation]"}]}]}], 
+            "\[RightAssociation]"}]}]}], "\[RightAssociation]"}]}]}], 
+      "\[RightAssociation]"}], "}"}]}]}], "\[RightAssociation]"}]], "Output",
+ CellChangeTimes->{
+  3.942990532539898*^9, {3.9429905804843464`*^9, 3.9429905955625534`*^9}, 
+   3.9429908396719036`*^9, 3.942991447281847*^9, 3.942991630536257*^9, 
+   3.9429917222403507`*^9, 3.9429918831298504`*^9},
+ CellLabel->
+  "Out[222]=",ExpressionUUID->"d576678c-6edd-ef4e-b46c-264d0dce43f9"]
+}, Open  ]],
+
+Cell[BoxData[""], "Code",ExpressionUUID->"24148a37-74e9-b741-9630-7b6adb0316ae"]
 },
 WindowSize->{761.25, 777},
 WindowMargins->{{Automatic, 6}, {94.5, Automatic}},
@@ -157,7 +326,13 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[1460, 33, 4684, 107, 454, "Code",ExpressionUUID->"c527f267-0cda-6c42-a637-d529ad4a9bf1"]
+Cell[1460, 33, 3528, 78, 208, "Code",ExpressionUUID->"c527f267-0cda-6c42-a637-d529ad4a9bf1"],
+Cell[CellGroupData[{
+Cell[5013, 115, 394, 8, 67, "Code",ExpressionUUID->"63287ad6-82e0-4e41-b85e-2d2eb9160bd4"],
+Cell[5410, 125, 6188, 125, 49, "Echo",ExpressionUUID->"2facae33-0276-f147-890f-f31729ecb0aa"],
+Cell[11601, 252, 2522, 54, 127, "Output",ExpressionUUID->"d576678c-6edd-ef4e-b46c-264d0dce43f9"]
+}, Open  ]],
+Cell[14138, 309, 80, 0, 50, "Code",ExpressionUUID->"24148a37-74e9-b741-9630-7b6adb0316ae"]
 }
 ]
 *)

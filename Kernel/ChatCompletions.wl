@@ -12,7 +12,8 @@
 *)
 
 BeginPackage["KirillBelov`AILink`ChatCompletions`", {
-    "KirillBelov`Objects`"
+    "KirillBelov`Objects`", 
+    "KirillBelov`Internal`Tasks`"
 }]; 
 
 
@@ -20,6 +21,12 @@ AIChatComplete::usage =
 "AIChatComplete[chat] completes the chat.
 AIChatComplete[chat, prompt] completes the chat with a custom prompt.
 AIChatComplete[prompt] create a chat and completes it with a custom prompt."; 
+
+
+AIChatCompleteAsync::usage = 
+"AIChatCompleteAsync[chat] completes the chat asynchronously.
+AIChatCompleteAsync[chat, prompt] completes the chat asynchronously with a custom prompt.
+AIChatCompleteAsync[prompt] create a chat and completes it asynchronously with a custom prompt."; 
 
 
 AIChatObject::usage = 
@@ -40,7 +47,8 @@ CreateType[AIChatObject, {
     "MessageConverter" :> messageConvert, 
     "ToolConverter" :> toolConvert, 
     "ToolEvaluator" :> toolEvaluate, 
-    "History" :> {}
+    "History" :> {}, 
+    "Task" :> Null
 }]; 
 
 
@@ -62,6 +70,11 @@ chat["messages"] += chat["MessageConverter"][message];
 (* chat["Tools"] = {<|tool1|>, <|tool2|>, ...} *)
 AIChatObject /: Set[chat_AIChatObject["tools"], tools: {___Association}] := 
 chat["Chat", "tools"] = tools; 
+
+
+(* chat["Tools"] = {tool1, tool2, ...} *)
+AIChatObject /: Set[chat_AIChatObject["tools"], tools_List] := 
+chat["Chat", "tools"] = Map[chat["ToolConverter"][#]&, tools]; 
 
 
 (* chat["Tools"] += <|tool1|> *)    
@@ -110,10 +123,60 @@ Module[{
     completion = ImportString[response["Body"], "RawJSON", CharacterEncoding -> "UTF-8"]; 
     chat["Completions"] = Append[chat["Completions"], completion]; 
 
+    If[KeyExistsQ[completion, "error"], 
+        Return[chat]; 
+    ];
+
     completionMessage = completion[["choices", 1, "message"]]; 
     chat["messages"] += completionMessage; 
 
     AIChatComplete[chat]
+]; 
+
+
+AIChatCompleteAsync[chat_AIChatObject] := 
+Module[{
+    request, 
+    task
+}, 
+    If[chatCompletionQ[chat], 
+        Return[chat]
+    ];
+
+    If[toolCallQ[chat], 
+        toolResultMessages = chat["ToolEvaluator"][chat]; 
+        Map[(chat["messages"] += #)&, toolResultMessages]; 
+    ];
+
+    request = chatCompletionRequest[chat]; 
+
+    task = With[{$request = request}, 
+        AsyncEvaluate[CloudEvaluate[URLRead[$request]], 
+            Function[response, 
+                Module[{
+                    completion, completionMessage
+                }, 
+                    chat["History"] = Append[chat["History"], <|"request" -> $request, "response" -> response|>]; 
+
+                    completion = ImportString[response["Body"], "RawJSON", CharacterEncoding -> "UTF-8"]; 
+                    chat["Completions"] = Append[chat["Completions"], completion]; 
+
+                    If[KeyExistsQ[completion, "error"], 
+                        Return[chat]; 
+                    ];
+
+                    completionMessage = completion[["choices", 1, "message"]]; 
+                    chat["messages"] += completionMessage; 
+
+                    AIChatCompleteAsync[chat]
+                ]
+            ]
+        ]; 
+    ]; 
+
+    chat["Task"] = task; 
+
+    Return[chat]
 ]; 
 
 
@@ -167,12 +230,7 @@ messageConvert[message_String] :=
 
 
 toolsConvert[tool_Association] := 
-Module[{
-    name = tool["Name"], 
-    args = tool["Args"]
-}, 
-    <|"type" -> "function", "function" -> <|"name" -> name, "args" -> args|>, "name" -> name|>
-]; 
+tool; 
 
 
 toolEvaluate[chat_AIChatObject] := 
@@ -212,27 +270,73 @@ CloudEvaluate[URLRead[request]];
 toolConvert[tool_Symbol] := 
 Module[{
     toolName = StringReplace[Context[tool] <> SymbolName[Unevaluated[tool]], "`" -> "__"], 
-    toolParameters = <||>
+    toolParameters = <||>, 
+    toolProperties
 }, 
-
     If[Length[DownValues[tool]] > 0, 
-        Map[
+        toolProperties = Association[Map[
             With[{$$argName = #[[1]]}, 
-
+                With[{$$argNameString = SymbolName[Unevaluated[$$argName]]}, 
+                    $$argNameString -> <|
+                        "type" -> "string"
+                    |>
+                ]
             ]&, 
             First[Apply[List, DownValues[tool][[1, 1]], {1}]]
-        ]
+        ]]; 
+
+        toolParameters = <|
+            "type" -> "object", 
+            "properties" -> toolProperties
+        |>; 
     ]; 
 
     <|
         "type" -> "function", 
         "function" -> <|
             "name" -> toolName, 
+            "description" -> ToString[tool::usage], 
             "parameters" -> toolParameters
-        |>, 
-        "name" -> toolName
+        |>
     |>
 ]; 
+
+
+getArgData[argName_String, pattern_] := 
+pattern /. {
+    Verbatim[Pattern][_, Verbatim[Blank][] | Verbatim[Blank][String]] | 
+    Verbatim[PatternTest][_, StringQ] :> argName -> <|
+        "type" -> "string", 
+        "description" -> argName <> " - string parameter."
+    |>, 
+    
+    Verbatim[Pattern][_, Verbatim[Blank][Integer]] | 
+    Verbatim[PatternTest][_, IntegerQ] :> argName -> <|
+        "type" -> "number", 
+        "description" -> argName <> " - integer parameter."
+    |>, 
+
+    Verbatim[PatternTest][_, Positive] :> argName -> <|
+        "type" -> "number", 
+        "description" -> argName <> " - positive integer parameter."
+    |>, 
+
+    Verbatim[PatternTest][_, NumericQ | NumberQ | RealValuedNumericQ | RealValuedNumberQ] :> argName -> <|
+        "type" -> "number", 
+        "description" -> argName <> " - numeric parameter."
+    |>, 
+
+    Verbatim[Pattern][_, Verbatim[Alternatives][True, False]] | 
+    Verbatim[PatternTest][_, BooleanQ] :> argName -> <|
+        "type" -> "boolean", 
+        "description" -> argName <> " - boolean parameter."
+    |>, 
+
+    ___ :> argName -> <|
+        "type" -> "string", 
+        "description" -> argName <> " - undefined type parameter expect as a string."
+    |>
+}; 
 
 
 End[];
