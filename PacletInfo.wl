@@ -18,7 +18,8 @@ PacletObject[
         "Context" -> {
           {"KirillBelov`AILink`", "AILink.wl"},
           {"KirillBelov`AILink`ChatView`", "ChatView.wl"}, 
-          {"KirillBelov`AILink`ChatCompletions`", "ChatCompletions.wl"}
+          {"KirillBelov`AILink`ChatCompletions`", "ChatCompletions.wl"}, 
+          {"KirillBelov`AILink`ChatObject`", "ChatObject.wl"}
         }
       },
       {

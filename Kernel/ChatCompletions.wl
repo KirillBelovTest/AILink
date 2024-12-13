@@ -115,7 +115,19 @@ Module[{
     request, response, completion, 
     toolResultMessages, completionMessage
 }, 
-    If[chatCompletionQ[chat], 
+    If[emptyQ[chat], 
+        Return[chat]
+    ];
+    
+    If[completedQ[chat], 
+        Return[chat]
+    ];
+
+    If[errorQ[chat], 
+        Return[chat]
+    ];
+
+    If[stopQ[chat], 
         Return[chat]
     ];
 
@@ -125,26 +137,37 @@ Module[{
             chat["messages"] += #; 
             chat["MessageHandler"][chat, #]
         )&, toolResultMessages]; 
+        Return[chat]
+    ]; 
+
+    If[assistCallQ[chat], 
+        request = chatCompletionRequest[chat]; 
+        response = urlRead[request]; 
+
+        chat["History"] = Append[chat["History"], <|"request" -> request, "response" -> response|>]; 
+
+        completion = ImportString[response["Body"], "RawJSON", CharacterEncoding -> "UTF-8"]; 
+        chat["Completions"] = Append[chat["Completions"], completion]; 
+
+        completionMessage = completion[["choices", 1, "message"]];  
+        chat["messages"] += completionMessage; 
+        chat["MessageHandler"][chat, completionMessage]; 
+
+        Return[chat]
     ];
-
-    request = chatCompletionRequest[chat]; 
-    response = urlRead[request]; 
-
-    chat["History"] = Append[chat["History"], <|"request" -> request, "response" -> response|>]; 
-
-    completion = ImportString[response["Body"], "RawJSON", CharacterEncoding -> "UTF-8"]; 
-    chat["Completions"] = Append[chat["Completions"], completion]; 
-
-    If[KeyExistsQ[completion, "error"], 
-        Return[chat]; 
-    ];
-
-    completionMessage = completion[["choices", 1, "message"]];  
-    chat["messages"] += completionMessage; 
-    chat["MessageHandler"][chat, completionMessage]; 
-
-    AIChatComplete[chat]
 ]; 
+
+
+AIChatObject /: emptyQ[chat_AIChatObject] := 
+Length[chat["Chat", "messages"]] === 0; 
+
+
+AIChatObject /: completedQ[chat_AIChatObject] := 
+Length[chat["Completions"]] > 0; 
+
+
+AIChatObject /: errorQ[chat_AIChatObject] := 
+KeyExistsQ[chat["Completions"][[-1]], "error"]; 
 
 
 AIChatCompleteAsync[chat_AIChatObject] := 
@@ -176,19 +199,16 @@ Module[{
                     chat["MessageHandler"][chat, completionMessage];    
 
                     If[toolCallQ[chat], 
-                        Block[{toolEvaluator = chat["ToolEvaluator"]}, 
-                            AsyncEvaluate[
-                                toolEvaluator[chat],  
-                                Function[toolResultMessages, 
-                                    Map[(
-                                        chat["messages"] += #; 
-                                        chat["MessageHandler"][chat, #]
-                                    )&, toolResultMessages]; 
-                                    
-                                    AIChatCompleteAsync[chat]
-                                ]
-                            ]
-                        ]
+                        toolEvaluateAsync[
+                            chat, 
+                            Function[toolResultMessage, 
+                                chat["messages"] += toolResultMessage; 
+                                chat["MessageHandler"][chat, toolResultMessage]; 
+                            ], 
+                            Function[AIChatCompleteAsync[chat]]
+                        ], 
+                    (*Else*)
+                        AIChatCompleteAsync[chat]
                     ]; 
                 ]
             ]
@@ -269,6 +289,25 @@ Module[{
 ]; 
 
 
+toolEvaluateAsync[chat_AIChatObject, tollResultHandler_, finishHandler_] := 
+Module[{
+    msg = chat["Chat", "messages"][[-1]]
+}, 
+    Table[
+        Block[{$$toolSymbol = ToExpression[StringReplace[toolCall["function", "name"], "__" -> "`"]]}, 
+            With[{$$toolSymbolDefinition = Language`ExtendedFullDefinition[$$toolSymbol]}, 
+                AsyncEvaluate[
+                    Once[Language`ExtendedFullDefinition[$$toolSymbol] = $$toolSymbolDefinition]; 
+                    $$toolSymbol[], 
+                    Function[result]
+                ]
+            ]
+        ], 
+        {toolCall, msg["tool_calls"]}
+    ]
+]; 
+
+
 toolFunction[tools_List, toolCall_Association] := 
 Module[{
     toolName = toolCall["function", "name"], 
@@ -288,16 +327,19 @@ urlRead[request_HTTPRequest] :=
 CloudEvaluate[URLRead[request]]; 
 
 
-toolConvert[tool_Symbol] := 
-Module[{
-    toolName = StringReplace[Context[tool] <> SymbolName[Unevaluated[tool]], "`" -> "__"], 
-    toolParameters = <||>, 
-    toolProperties
-}, 
-    If[Length[DownValues[tool]] > 0, 
-        toolProperties = Association[Map[
-            With[{$$argName = #[[1]]}, 
-                With[{$$argNameString = SymbolName[Unevaluated[$$argName]]}, 
+toolSymbolToString[tool_Symbol] := 
+StringReplace[Context[tool] <> SymbolName[Unevaluated[tool]], "`" -> "__"]; 
+
+
+toolSymbolToAssoc[tool_Symbol] := 
+With[{toolName = toolSymbolToString[tool]}, 
+    Module[{
+        toolProperties, toolParameters
+    }, 
+        If[Length[DownValues[tool]] > 0, 
+            toolProperties = Association[Map[
+                With[{$$argName = #[[1]]}, 
+                    With[{$$argNameString = SymbolName[Unevaluated[$$argName]]}, 
                     $$argNameString -> <|
                         "type" -> "string"
                     |>
@@ -310,7 +352,6 @@ Module[{
             "type" -> "object", 
             "properties" -> toolProperties
         |>; 
-    ]; 
 
     <|
         "type" -> "function", 
@@ -320,7 +361,7 @@ Module[{
             "parameters" -> toolParameters
         |>
     |>
-]; 
+]]]; 
 
 
 getArgData[argName_String, pattern_] := 
