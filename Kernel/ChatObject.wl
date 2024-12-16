@@ -17,8 +17,9 @@ CreateType[AIChatObject, init, {
     "Tools" -> {}, 
     "Model" -> "gpt-4o-mini", 
     "Temperature" -> 1.0, 
+    "Completions" :> {}, 
     "APIKey" :> SystemCredentials["OPENAI_API_KEY"], 
-    "Completions" :> {}
+    "Endpoint" -> "https://api.openai.com/v1/chat/completions"
 }]; 
 
 
@@ -59,23 +60,14 @@ Module[{
 
 AIChatObject /: createRequest[chat_AIChatObject] := 
 Module[{
-    requestAssoc, 
-    endpoint
+    requestAssoc = chat["RequestAssoc"], 
+    endpoint = chat["Endpoint"]
 }, 
-    requestAssoc = <|
-        "messages" -> chat["Messages"], 
-        "tools" -> chat["Tools"], 
-        "model" -> chat["Model"], 
-        "temperature" -> chat["Temperature"]
-    |>; 
-
-    If[ListQ[request["tools"]] && Length[request["tools"]] > 0, 
-        request["tools_choice"] = "auto", 
-    (*Else*)
-        request = Delete[request, "tools"]
-    ]; 
-
-    request
+    HTTPRequest[endpoint, <|
+        Method -> "POST", 
+        ContentType -> "application/json", 
+        Body -> ExportString[requestAssoc, "RawJSON"]
+    |>]
 ]; 
 
 
