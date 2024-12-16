@@ -2,32 +2,44 @@
  "cells": [
   {
    "kind": 2,
-   "value": "1+1",
+   "value": "Get[\"KirillBelov`AILink`ChatCompletions`\"]; ",
    "languageId": "wolfram",
-   "outputs": [
-    {
-     "items": [
-      {
-       "data": "<div class=\"wexpr\"><w>2</w></div>",
-       "mime": "x-application/wolfram-language-html"
-      },
-      {
-       "data": "2",
-       "mime": "text/plain"
-      }
-     ],
-     "id": "4946bcb8-94f1-46bb-8fcf-d65d2f5c99fc",
-     "metadata": {
-      "cellLabel": "Out[3]= ",
-      "isBoxData": false
-     }
-    }
-   ],
+   "outputs": [],
    "metadata": {},
    "executionSummary": {
     "timing": {
-     "startTime": 1734026673217,
-     "endTime": 1734026673372
+     "startTime": 1734376342776,
+     "endTime": 1734376344795
+    },
+    "executionOrder": 1,
+    "success": true
+   }
+  },
+  {
+   "kind": 2,
+   "value": "chat = AIChatObject[]; ",
+   "languageId": "wolfram",
+   "outputs": [],
+   "metadata": {},
+   "executionSummary": {
+    "timing": {
+     "startTime": 1734376355847,
+     "endTime": 1734376355926
+    },
+    "executionOrder": 2,
+    "success": true
+   }
+  },
+  {
+   "kind": 2,
+   "value": "chat[\"Messages\"] += \"Привет\"; ",
+   "languageId": "wolfram",
+   "outputs": [],
+   "metadata": {},
+   "executionSummary": {
+    "timing": {
+     "startTime": 1734376375849,
+     "endTime": 1734376375941
     },
     "executionOrder": 3,
     "success": true

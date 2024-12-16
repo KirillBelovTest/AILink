@@ -140,18 +140,30 @@ With[{
         functionName = toolCallAssoc[["function", "name"]]; 
         functionArguments = toolCallAssoc[["function", "arguments"]]; 
 
-        functionResult = ToString[Apply[
-            ToExpression[StringReplace[functionName, "__" -> "`"]], 
-            Values[ImportString[ExportString[functionArguments, "Text"], "RawJSON", CharacterEncoding -> "UTF-8"]]
-        ]]; 
+        Block[{$$function = ToExpression[StringReplace[functionName, "__" -> "`"]]}, 
+            With[{
+                $$args = Values[ImportString[ExportString[functionArguments, "Text"], "RawJSON", CharacterEncoding -> "UTF-8"]], 
+                $$defs = Language`ExtendedFullDefinition[$$function]
+            }, 
+            
+                AsyncEvaluate[
+                    Language`ExtendedFullDefinition[] = $$defs; 
+                    ToString[$$function @@ args], 
+                    
+                    Function[functionResult, 
+                        chat["ToolCalls"] = Append[chat["ToolCalls"], toolId -> functionResult]; 
 
-        chat["ToolCalls"] = Append[chat["ToolCalls"], toolId -> functionResult]; 
+                        AppendTo[chat["Messages"], <|
+                            "role" -> "tool", 
+                            "content" -> functionResult, 
+                            "tool_call_id" -> toolId
+                        |>]; 
 
-        AppendTo[chat["Messages"], <|
-            "role" -> "tool", 
-            "content" -> functionResult, 
-            "tool_call_id" -> toolId
-        |>]; 
+                        continuation[chat]
+                    ]
+                ]
+            ]
+        ]; 
 
         Return[chat]
     ]; 
