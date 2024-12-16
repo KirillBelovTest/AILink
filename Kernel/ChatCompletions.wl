@@ -23,12 +23,6 @@ AIChatComplete[chat, prompt] completes the chat with a custom prompt.
 AIChatComplete[prompt] create a chat and completes it with a custom prompt."; 
 
 
-AIChatCompleteAsync::usage = 
-"AIChatCompleteAsync[chat] completes the chat asynchronously.
-AIChatCompleteAsync[chat, prompt] completes the chat asynchronously with a custom prompt.
-AIChatCompleteAsync[prompt] create a chat and completes it asynchronously with a custom prompt."; 
-
-
 AIChatObject::usage = 
 "AIChatObject[] is an object that represents a chat."; 
 
@@ -52,255 +46,226 @@ CreateType[AIChatObject, {
     "APIKey" :> SystemCredential["OPENAI_API_KEY"], 
     "Endpoint" -> "https://api.openai.com/v1/chat/completions", 
 
-    "MessageHandler" -> Function[Echo[#, Now]]
+    "MessageHandler" -> Function[Echo[#, Now]], 
+    "Async" -> False
 }]; 
 
 
 AIChatComplete[chat_AIChatObject] := 
-Which[
-    toolCallQ[chat], toolCall[chat]; AIChatComplete[chat], 
-    assistCallQ[chat], assistCall[chat]; AIChatComplete[chat], 
-    True, chat
+If[chat["Async"], 
+    Which[
+        toolCallQ[chat], toolCallAsync[chat, AIChatComplete[chat]&], 
+        assistCallQ[chat], assistCallAsync[chat, AIChatComplete[chat]&], 
+        True, chat
+    ], 
+(*Else*)
+    Which[
+        toolCallQ[chat], toolCall[chat]; AIChatComplete[chat], 
+        assistCallQ[chat], assistCall[chat]; AIChatComplete[chat], 
+        True, chat
+    ]
 ]; 
+
+
+Unprotect[AddTo]; 
+
+
+AddTo[(chat_?(Head[#] === AIChatObject&))["Messages"], message_String] := 
+AppendTo[chat["Messages"], <|
+    "role" -> "user", 
+    "content" -> message
+|>]; 
+
+
+AddTo[(chat_?(Head[#] === AIChatObject&))["Tools"], function_Symbol] := 
+AppendTo[chat["Tools"], functionToToolAssoc[function]]; 
+
+
+Protect[AddTo]; 
 
 
 AIChatObject /: toolCallQ[chat_AIChatObject] := 
 Length[Select[chat["ToolCalls"], # === Null&]] > 0; 
 
 
-toolCall[chat_AIChatObject] := 
-Module[{}]
-
-
-AIChatCompleteAsync[chat_AIChatObject] := 
-Module[{
-    request, 
-    task
+AIChatObject /: toolCall[chat_AIChatObject] := 
+With[{
+    toolId = First @ Keys @ Select[chat["ToolCalls"], # === Null&]
 }, 
-    If[chatCompletionQ[chat], 
+    Module[{
+        toolCallAssoc, functionName, functionArguments, functionResult
+    }, 
+        toolCallAssoc = 
+            SelectFirst[toolId === #["id"]&] @ 
+            Flatten @ 
+            Query[All, "tool_calls"] @ 
+            Select[KeyExistsQ[#, "tool_calls"]&] @ 
+            chat["Messages"]; 
+
+        functionName = toolCallAssoc[["function", "name"]]; 
+        functionArguments = toolCallAssoc[["function", "arguments"]]; 
+
+        functionResult = ToString[Apply[
+            ToExpression[StringReplace[functionName, "__" -> "`"]], 
+            Values[ImportString[ExportString[functionArguments, "Text"], "RawJSON", CharacterEncoding -> "UTF-8"]]
+        ]]; 
+
+        chat["ToolCalls"] = Append[chat["ToolCalls"], toolId -> functionResult]; 
+
+        AppendTo[chat["Messages"], <|
+            "role" -> "tool", 
+            "content" -> functionResult, 
+            "tool_call_id" -> toolId
+        |>]; 
+
         Return[chat]
-    ];
+    ]; 
+]; 
 
-    request = chatCompletionRequest[chat]; 
 
-    task = With[{$request = request}, 
-        AsyncEvaluate[CloudEvaluate[URLRead[$request]], 
-            Function[response, 
-                Module[{completion, completionMessage, toolResultMessages}, 
-                    chat["History"] = Append[chat["History"], <|"request" -> $request, "response" -> response|>]; 
+AIChatObject /: toolCallAsync[chat_AIChatObject, continuation_Function] := 
+With[{
+    toolId = First @ Keys @ Select[chat["ToolCalls"], # === Null&]
+}, 
+    Module[{
+        toolCallAssoc, functionName, functionArguments, functionResult
+    }, 
+        toolCallAssoc = 
+            SelectFirst[toolId === #["id"]&] @ 
+            Flatten @ 
+            Query[All, "tool_calls"] @ 
+            Select[KeyExistsQ[#, "tool_calls"]&] @ 
+            chat["Messages"]; 
 
-                    completion = ImportString[response["Body"], "RawJSON", CharacterEncoding -> "UTF-8"]; 
-                    chat["Completions"] = Append[chat["Completions"], completion]; 
+        functionName = toolCallAssoc[["function", "name"]]; 
+        functionArguments = toolCallAssoc[["function", "arguments"]]; 
 
-                    If[KeyExistsQ[completion, "error"], 
-                        Return[chat]; 
-                    ];
+        functionResult = ToString[Apply[
+            ToExpression[StringReplace[functionName, "__" -> "`"]], 
+            Values[ImportString[ExportString[functionArguments, "Text"], "RawJSON", CharacterEncoding -> "UTF-8"]]
+        ]]; 
 
-                    completionMessage = completion[["choices", 1, "message"]]; 
-                    chat["messages"] += completionMessage; 
-                    chat["MessageHandler"][chat, completionMessage];    
+        chat["ToolCalls"] = Append[chat["ToolCalls"], toolId -> functionResult]; 
 
-                    If[toolCallQ[chat], 
-                        toolEvaluateAsync[
-                            chat, 
-                            Function[toolResultMessage, 
-                                chat["messages"] += toolResultMessage; 
-                                chat["MessageHandler"][chat, toolResultMessage]; 
-                            ], 
-                            Function[AIChatCompleteAsync[chat]]
-                        ], 
-                    (*Else*)
-                        AIChatCompleteAsync[chat]
-                    ]; 
-                ]
-            ]
-        ]; 
+        AppendTo[chat["Messages"], <|
+            "role" -> "tool", 
+            "content" -> functionResult, 
+            "tool_call_id" -> toolId
+        |>]; 
+
+        Return[chat]
+    ]; 
+]; 
+
+
+AIChatObject /: assistCallQ[chat_AIChatObject] := 
+(Length[Select[chat["ToolCalls"], # === Null&]] === 0 && 
+Last[chat["Messages"]]["role"] === "tool") || 
+(Last[chat["Messages"]]["role"] === "user"); 
+
+
+AIChatObject /: assistCall[chat_AIChatObject] := 
+Module[{endpoint, apiKey, request, response, completion, requestAssoc}, 
+    endpoint = chat["Endpoint"]; 
+    apiKey = chat["APIKey"]; 
+
+    requestAssoc = <|
+        "model" -> chat["Model"], 
+        "messages" -> chat["Messages"], 
+        "temperature" -> chat["Temperature"]
+    |>; 
+
+    If[Length[chat["Tools"]] > 0, 
+        requestAssoc["tools"] = chat["Tools"], 
+        requestAssoc["tool_choice"] = chat["ToolChoice"]
     ]; 
 
-    chat["Task"] = task; 
+    requestAssoc = DeleteCases[requestAssoc, Automatic]; 
+
+    request = HTTPRequest[endpoint, <|
+        Method -> "POST", 
+        "Headers" -> <|"Authorization" -> "Bearer " <> apiKey|>, 
+        "ContentType" -> "application/json", 
+        "Body" -> ExportString[requestAssoc, "RawJSON", CharacterEncoding -> "UTF-8"]
+    |>]; 
+
+    response = CloudEvaluate[URLRead[request]]; 
+
+    responseBody = ExportString[response["Body"], "Text"]; 
+
+    completion = ImportString[responseBody, "RawJSON", CharacterEncoding -> "UTF-8"]; 
+
+    AppendTo[chat["Completions"], completion]; 
+
+    completionMessage = completion[["choices", 1, "message"]]; 
+
+    AppendTo[chat["Messages"], completionMessage]; 
+
+    If[KeyExistsQ[completionMessage, "tool_calls"], 
+        Map[
+            (chat["ToolCalls"] = Append[chat["ToolCalls"], #["id"] -> Null])&
+        ] @ completionMessage["tool_calls"]; 
+    ]; 
 
     Return[chat]
 ]; 
 
 
-chatCompletionQ[chat_AIChatObject] := 
-Length[chat["Chat", "messages"]] === 0 || 
-((chat["Chat", "messages"][[-1, "role"]] === "assistant") && !toolCallQ[chat]);  
-
-
-toolCallQ[chat_AIChatObject] := 
-Module[{
-    lastMsg = chat["Chat", "messages"][[-1]], 
-    tools = chat["Chat", "tools"][[All, "function", "name"]]
+functionToToolAssoc[function_Symbol] := 
+With[{
+    functionName = StringReplace[Context[function] <> SymbolName[function], "`" -> "__"], 
+    functionParameters = getParametersInfo[function]
 }, 
-    KeyExistsQ[lastMsg, "tool_calls"] && 
-    SubsetQ[tools, lastMsg[["tool_calls", All, "function", "name"]]]
-]; 
-
-
-chatCompletionRequest[chat_AIChatObject] := 
-Module[{
-    requestAssoc, 
-    requestBody, 
-    apiKey = chat["APIKey"]
-}, 
-    requestAssoc = chat["Chat"]; 
-
-    If[Length[requestAssoc["tools"]] == 0, requestAssoc = Delete[requestAssoc, "tools"]]; 
-
-    requestBody = ExportString[requestAssoc, "RawJSON", CharacterEncoding -> "UTF-8"]; 
-
-    request = HTTPRequest[
-        "https://api.openai.com/v1/chat/completions", 
-        <|
-            Method -> "POST", 
-            "ContentType" -> "application/json", 
-            "Headers" -> {"Authorization" -> "Bearer " <> apiKey}, 
-            "Body" -> requestBody
-        |>
-    ]; 
-
-    Return[request]
-]; 
-
-
-messageConvert[message_Association] := 
-message; 
-
-
-messageConvert[message_String] := 
-<|"role" -> "user", "content" -> message|>;  
-
-
-toolsConvert[tool_Association] := 
-tool; 
-
-
-toolEvaluate[chat_AIChatObject] := 
-Module[{
-    msg = chat["Chat", "messages"][[-1]]
-}, 
-    Table[
-        <|
-            "role" -> "tool", 
-            "content" -> toolFunction[chat["Chat", "tools"], toolCall], 
-            "tool_call_id" -> toolCall["id"]
-        |>, 
-        {toolCall, msg["tool_calls"]}
-    ]
-]; 
-
-
-toolEvaluateAsync[chat_AIChatObject, tollResultHandler_, finishHandler_] := 
-Module[{
-    msg = chat["Chat", "messages"][[-1]]
-}, 
-    Table[
-        Block[{$$toolSymbol = ToExpression[StringReplace[toolCall["function", "name"], "__" -> "`"]]}, 
-            With[{$$toolSymbolDefinition = Language`ExtendedFullDefinition[$$toolSymbol]}, 
-                AsyncEvaluate[
-                    Once[Language`ExtendedFullDefinition[$$toolSymbol] = $$toolSymbolDefinition]; 
-                    $$toolSymbol[], 
-                    Function[result]
-                ]
-            ]
-        ], 
-        {toolCall, msg["tool_calls"]}
-    ]
-]; 
-
-
-toolFunction[tools_List, toolCall_Association] := 
-Module[{
-    toolName = toolCall["function", "name"], 
-    toolParameters, toolSymbol
-}, 
-    toolParameters = SelectFirst[tools, toolName === #["function", "name"]&]["function", "parameters"]; 
-
-    toolSymbol = ToExpression[StringReplace[toolName, "__" -> "`"]]; 
-
-    toolArguments = Values[ImportString[ExportString[toolCall["function", "arguments"], "Text"], "RawJSON", CharacterEncoding -> "UTF-8"]]; 
-
-    ToString[Apply[toolSymbol][toolArguments]]
-]; 
-
-
-urlRead[request_HTTPRequest] := 
-CloudEvaluate[URLRead[request]]; 
-
-
-toolSymbolToString[tool_Symbol] := 
-StringReplace[Context[tool] <> SymbolName[Unevaluated[tool]], "`" -> "__"]; 
-
-
-toolSymbolToAssoc[tool_Symbol] := 
-With[{toolName = toolSymbolToString[tool]}, 
-    Module[{
-        toolProperties, toolParameters
-    }, 
-        If[Length[DownValues[tool]] > 0, 
-            toolProperties = Association[Map[
-                With[{$$argName = #[[1]]}, 
-                    With[{$$argNameString = SymbolName[Unevaluated[$$argName]]}, 
-                    $$argNameString -> <|
-                        "type" -> "string"
-                    |>
-                ]
-            ]&, 
-            First[Apply[List, DownValues[tool][[1, 1]], {1}]]
-        ]]; 
-
-        toolParameters = <|
-            "type" -> "object", 
-            "properties" -> toolProperties
-        |>; 
-
     <|
         "type" -> "function", 
         "function" -> <|
-            "name" -> toolName, 
-            "description" -> ToString[tool::usage], 
-            "parameters" -> toolParameters
+            "name" -> functionName, 
+            "description" -> ToString[function::usage], 
+            "parameters" -> functionParameters
         |>
     |>
-]]]; 
+]; 
 
 
-getArgData[argName_String, pattern_] := 
-pattern /. {
-    Verbatim[Pattern][_, Verbatim[Blank][] | Verbatim[Blank][String]] | 
-    Verbatim[PatternTest][_, StringQ] :> argName -> <|
-        "type" -> "string", 
-        "description" -> argName <> " - string parameter."
-    |>, 
-    
-    Verbatim[Pattern][_, Verbatim[Blank][Integer]] | 
-    Verbatim[PatternTest][_, IntegerQ] :> argName -> <|
-        "type" -> "number", 
-        "description" -> argName <> " - integer parameter."
-    |>, 
+getParametersInfo[function_Symbol] := 
+Module[{downValues = DownValues[function], patterns, parameters}, 
+    If[Length[downValues] === 0, 
+        Return[<||>], 
+    (*Else*)
+        parameters = <||>; 
 
-    Verbatim[PatternTest][_, Positive] :> argName -> <|
-        "type" -> "number", 
-        "description" -> argName <> " - positive integer parameter."
-    |>, 
+        parameters["type"] = "object"; 
 
-    Verbatim[PatternTest][_, NumericQ | NumberQ | RealValuedNumericQ | RealValuedNumberQ] :> argName -> <|
-        "type" -> "number", 
-        "description" -> argName <> " - numeric parameter."
-    |>, 
+        patterns = downValues[[1, 1]] /. Verbatim[HoldPattern][_[$params___]] -> {$params}; 
 
-    Verbatim[Pattern][_, Verbatim[Alternatives][True, False]] | 
-    Verbatim[PatternTest][_, BooleanQ] :> argName -> <|
-        "type" -> "boolean", 
-        "description" -> argName <> " - boolean parameter."
-    |>, 
+        parameters["properties"] = Association @ Map[
+            Module[{name, type, description}, 
+                name = # /. {
+                   Verbatim[Pattern][$$arg_Symbol, _] :> SymbolName[Unevaluated[$$arg]], 
+                    Verbatim[PatternTest][Verbatim[Pattern][$$arg_Symbol, _], _] :> SymbolName[Unevaluated[$$arg]]
+                }; 
+        
+                type = # /. {
+                    Verbatim[Pattern][_, Verbatim[Blank][]] :> "string", 
+                    Verbatim[Pattern][_, Verbatim[Blank][String]] :> "string", 
+                    Verbatim[PatternTest][_, StringQ] :> "string", 
+                    Verbatim[Pattern][_, Verbatim[Blank][Real]] :> "number", 
+                    Verbatim[Pattern][_, Verbatim[Blank][Integer]] :> "number", 
+                    Verbatim[PatternTest][_, IntegerQ | NumericQ | NumberQ] :> "number"
+                };  
 
-    ___ :> argName -> <|
-        "type" -> "string", 
-        "description" -> argName <> " - undefined type parameter expect as a string."
-    |>
-}; 
+                description = ToString[name] <> " - " <> ToString[type] <> " value."; 
+
+                name -> <|
+                    "type" -> type, 
+                    "description" -> description
+                |>
+            ]&, patterns
+        ]; 
+
+        parameters
+    ]
+]; 
 
 
 End[];
