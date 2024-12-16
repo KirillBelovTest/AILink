@@ -37,137 +37,39 @@ Begin["`Private`"];
 
 
 CreateType[AIChatObject, {
-    "Chat" :> Evaluate[<|
-        "messages" -> {}, 
-        "model" -> "gpt-4o", 
-        "temperature" -> 1.0
-    |>], 
-    "Completions" :> {}, 
+    "Messages" -> {}, 
+    "Model" -> "gpt-4o-mini", 
+    "Temperature" -> 1.0, 
+    "Tools" -> {}, 
+    "ToolChoice" -> Automatic, 
+
+    "Completions" -> {}, 
+    "ToolCalls" -> <||>, 
+    "Errors" -> {}, 
+
+    "History" -> {}, 
+
     "APIKey" :> SystemCredential["OPENAI_API_KEY"], 
-    "MessageConverter" :> messageConvert, 
-    "ToolConverter" :> toolConvert, 
-    "ToolEvaluator" :> toolEvaluate, 
-    "History" :> {}, 
-    "Task" :> Null, 
-    "MessageHandler" :> messageHandler
+    "Endpoint" -> "https://api.openai.com/v1/chat/completions", 
+
+    "MessageHandler" -> Function[Echo[#, Now]]
 }]; 
 
 
-(* chat["Messages"] = {<|msg1|>, <|msg2|>, ...} *)
-AIChatObject /: Set[chat_AIChatObject["messages"], messages: {___Association}] := 
-(
-    chat["Chat", "messages"] = messages; 
-    Map[(chat["MessageHandler"][chat, #])&, messages]; 
-    messages
-); 
-
-
-(* chat["Messages"] += <|msg1|> *)
-AIChatObject /: AddTo[chat_AIChatObject["messages"], message_Association] := 
-(
-    chat["Chat", "messages"] = Append[chat["Chat", "messages"], message]; 
-    chat["MessageHandler"][chat, message]; 
-    message
-); 
-
-
-(* chat["Messages"] += "message" *)
-AIChatObject /: AddTo[chat_AIChatObject["messages"], message_String] := 
-chat["messages"] += chat["MessageConverter"][message]; 
-
-
-(* chat["Tools"] = {<|tool1|>, <|tool2|>, ...} *)
-AIChatObject /: Set[chat_AIChatObject["tools"], tools: {___Association}] := 
-chat["Chat", "tools"] = tools; 
-
-
-(* chat["Tools"] = {tool1, tool2, ...} *)
-AIChatObject /: Set[chat_AIChatObject["tools"], tools_List] := 
-chat["Chat", "tools"] = Map[chat["ToolConverter"][#]&, tools]; 
-
-
-(* chat["Tools"] += <|tool1|> *)    
-AIChatObject /: AddTo[chat_AIChatObject["tools"], tool_Association] := 
-chat["Chat", "tools"] = Append[chat["Chat", "tools"], tool]; 
-
-
-(* chat["Tools"] += tool *)
-AIChatObject /: AddTo[chat_AIChatObject["tools"], tool_Association] := 
-chat["tools"] += chat["ToolConverter"][tool]; 
-
-
-Unprotect[AddTo]; 
-
-
-(* chat[key] += value *)
-AddTo[(chat_Symbol?(Head[#] === AIChatObject&))[key_], value_] := 
-With[{$chat = chat}, AddTo[$chat[key], value]]; 
-
-
-Protect[AddTo]; 
-
-
-UpValues[AIChatObject] = Reverse[UpValues[AIChatObject]]; 
-
-
 AIChatComplete[chat_AIChatObject] := 
-Module[{
-    request, response, completion, 
-    toolResultMessages, completionMessage
-}, 
-    If[emptyQ[chat], 
-        Return[chat]
-    ];
-    
-    If[completedQ[chat], 
-        Return[chat]
-    ];
-
-    If[errorQ[chat], 
-        Return[chat]
-    ];
-
-    If[stopQ[chat], 
-        Return[chat]
-    ];
-
-    If[toolCallQ[chat], 
-        toolResultMessages = chat["ToolEvaluator"][chat]; 
-        Map[(
-            chat["messages"] += #; 
-            chat["MessageHandler"][chat, #]
-        )&, toolResultMessages]; 
-        Return[chat]
-    ]; 
-
-    If[assistCallQ[chat], 
-        request = chatCompletionRequest[chat]; 
-        response = urlRead[request]; 
-
-        chat["History"] = Append[chat["History"], <|"request" -> request, "response" -> response|>]; 
-
-        completion = ImportString[response["Body"], "RawJSON", CharacterEncoding -> "UTF-8"]; 
-        chat["Completions"] = Append[chat["Completions"], completion]; 
-
-        completionMessage = completion[["choices", 1, "message"]];  
-        chat["messages"] += completionMessage; 
-        chat["MessageHandler"][chat, completionMessage]; 
-
-        Return[chat]
-    ];
+Which[
+    toolCallQ[chat], toolCall[chat]; AIChatComplete[chat], 
+    assistCallQ[chat], assistCall[chat]; AIChatComplete[chat], 
+    True, chat
 ]; 
 
 
-AIChatObject /: emptyQ[chat_AIChatObject] := 
-Length[chat["Chat", "messages"]] === 0; 
+AIChatObject /: toolCallQ[chat_AIChatObject] := 
+Length[Select[chat["ToolCalls"], # === Null&]] > 0; 
 
 
-AIChatObject /: completedQ[chat_AIChatObject] := 
-Length[chat["Completions"]] > 0; 
-
-
-AIChatObject /: errorQ[chat_AIChatObject] := 
-KeyExistsQ[chat["Completions"][[-1]], "error"]; 
+toolCall[chat_AIChatObject] := 
+Module[{}]
 
 
 AIChatCompleteAsync[chat_AIChatObject] := 
