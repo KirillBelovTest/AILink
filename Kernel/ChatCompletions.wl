@@ -69,7 +69,7 @@ Length[Select[chat["ToolCalls"], # === Null&]] > 0;
 
 
 toolCall[chat_AIChatObject] := 
-
+Module[{}]
 
 
 AIChatCompleteAsync[chat_AIChatObject] := 
