@@ -1,16 +1,5 @@
 (* :Package: *)
 
-(*
-
-         chat
-           |
-        complete
-           |
-        fnished?
-        /    \
-    complete return
-*)
-
 BeginPackage["KirillBelov`AILink`ChatCompletions`", {
     "KirillBelov`Objects`", 
     "KirillBelov`Internal`Tasks`"
@@ -93,7 +82,7 @@ With[{
     toolId = First @ Keys @ Select[chat["ToolCalls"], # === Null&]
 }, 
     Module[{
-        toolCallAssoc, functionName, functionArguments, functionResult
+        toolCallAssoc, functionName, functionArguments, functionResult, function, args
     }, 
         toolCallAssoc = 
             SelectFirst[toolId === #["id"]&] @ 
@@ -105,10 +94,10 @@ With[{
         functionName = toolCallAssoc[["function", "name"]]; 
         functionArguments = toolCallAssoc[["function", "arguments"]]; 
 
-        functionResult = ToString[Apply[
-            ToExpression[StringReplace[functionName, "__" -> "`"]], 
-            Values[ImportString[ExportString[functionArguments, "Text"], "RawJSON", CharacterEncoding -> "UTF-8"]]
-        ]]; 
+        function = ToExpression[StringReplace[functionName, "__" -> "`"]]; 
+        args = Values[ImportString[ExportString[functionArguments, "Text"], "RawJSON", CharacterEncoding -> "UTF-8"]]; 
+
+        functionResult = ToString[Apply[function, args]]; 
 
         chat["ToolCalls"] = Append[chat["ToolCalls"], toolId -> functionResult]; 
 
@@ -145,21 +134,26 @@ With[{
                 $$args = Values[ImportString[ExportString[functionArguments, "Text"], "RawJSON", CharacterEncoding -> "UTF-8"]], 
                 $$defs = Language`ExtendedFullDefinition[$$function]
             }, 
-            
                 AsyncEvaluate[
                     Language`ExtendedFullDefinition[] = $$defs; 
-                    ToString[$$function @@ args], 
+                    ToString[$$function @@ $$args], 
                     
                     Function[functionResult, 
-                        chat["ToolCalls"] = Append[chat["ToolCalls"], toolId -> functionResult]; 
+                        Module[{message}, 
+                            chat["ToolCalls"] = Append[chat["ToolCalls"], toolId -> functionResult]; 
 
-                        AppendTo[chat["Messages"], <|
-                            "role" -> "tool", 
-                            "content" -> functionResult, 
-                            "tool_call_id" -> toolId
-                        |>]; 
+                            message = <|
+                                "role" -> "tool", 
+                                "content" -> functionResult, 
+                                "tool_call_id" -> toolId
+                            |>; 
 
-                        continuation[chat]
+                            chat["MessageHandler"][chat, message]; 
+
+                            AppendTo[chat["Messages"], message]; 
+
+                            continuation[chat]
+                        ]
                     ]
                 ]
             ]
@@ -178,6 +172,31 @@ Last[chat["Messages"]]["role"] === "tool") ||
 
 AIChatObject /: assistCall[chat_AIChatObject] := 
 Module[{endpoint, apiKey, request, response, completion, requestAssoc}, 
+    request = createRequest[chat]; 
+    response = CloudEvaluate[URLRead[request]]; 
+    handleCompletion[chat, response]; 
+
+    Return[chat]
+]; 
+
+
+AIChatObject /: assistCallAsync[chat_AIChatObject, continuation_Function] := 
+With[{$request = createRequest[chat]}, 
+    AsyncEvaluate[
+        CloudEvaluate[URLRead[$request]], 
+
+        Function[response, 
+            handleCompletion[chat, response]; 
+            continuation[chat]
+        ]
+    ]; 
+
+    Return[chat]
+]; 
+
+
+AIChatObject /: createRequest[chat_AIChatObject] := 
+Module[{endpoint, apiKey, requestAssoc}, 
     endpoint = chat["Endpoint"]; 
     apiKey = chat["APIKey"]; 
 
@@ -194,22 +213,30 @@ Module[{endpoint, apiKey, request, response, completion, requestAssoc},
 
     requestAssoc = DeleteCases[requestAssoc, Automatic]; 
 
-    request = HTTPRequest[endpoint, <|
+    HTTPRequest[endpoint, <|
         Method -> "POST", 
         "Headers" -> <|"Authorization" -> "Bearer " <> apiKey|>, 
         "ContentType" -> "application/json", 
         "Body" -> ExportString[requestAssoc, "RawJSON", CharacterEncoding -> "UTF-8"]
-    |>]; 
+    |>]
+]; 
 
-    response = CloudEvaluate[URLRead[request]]; 
+
+handleCompletion[chat_AIChatObject, response_HTTPResponse] := 
+Module[{responseBody, completion, completionMessage}, 
+    Global`$response = response; 
 
     responseBody = ExportString[response["Body"], "Text"]; 
 
     completion = ImportString[responseBody, "RawJSON", CharacterEncoding -> "UTF-8"]; 
 
+    completion[["choices", 1, "message", "content"]] = convertToReadable[completion[["choices", 1, "message", "content"]]]; 
+
     AppendTo[chat["Completions"], completion]; 
 
     completionMessage = completion[["choices", 1, "message"]]; 
+
+    chat["MessageHandler"][chat, completionMessage]; 
 
     AppendTo[chat["Messages"], completionMessage]; 
 
@@ -218,8 +245,6 @@ Module[{endpoint, apiKey, request, response, completion, requestAssoc},
             (chat["ToolCalls"] = Append[chat["ToolCalls"], #["id"] -> Null])&
         ] @ completionMessage["tool_calls"]; 
     ]; 
-
-    Return[chat]
 ]; 
 
 
@@ -278,6 +303,13 @@ Module[{downValues = DownValues[function], patterns, parameters},
         parameters
     ]
 ]; 
+
+
+convertToReadable[text_String] /; StringContainsQ[text, "\[CapitalEth]"] := 
+FromCharacterCode[ToCharacterCode[text, "ISO8859-1"], "UTF8"]; 
+
+
+convertToReadable[expr_] := expr; 
 
 
 End[];

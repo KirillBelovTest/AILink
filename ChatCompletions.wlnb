@@ -8,50 +8,226 @@
    "metadata": {},
    "executionSummary": {
     "timing": {
-     "startTime": 1734376342776,
-     "endTime": 1734376344795
+     "startTime": 1734421512583,
+     "endTime": 1734421512683
     },
-    "executionOrder": 1,
+    "executionOrder": 102,
     "success": true
    }
   },
   {
    "kind": 2,
-   "value": "chat = AIChatObject[]; ",
+   "value": "chat = AIChatObject[\"Async\" -> True]; \r\nchat[\"Messages\"] += \"Привет\"; \r\nchat[\"Messages\"]",
+   "languageId": "wolfram",
+   "outputs": [
+    {
+     "items": [
+      {
+       "data": "<div class=\"wexpr\"><wrow><w></w><wb>{</wb><wrow><w></w><wb></wb><wrow><w></w><wrow><w></w><w>role</w><w class=\"symbol\"></w><w>user</w></wrow><w>,</w><wrow><w></w><w>content</w><w class=\"symbol\"></w><w>Привет</w></wrow></wrow><wb></wb></wrow><wb>}</wb></wrow></div>",
+       "mime": "x-application/wolfram-language-html"
+      },
+      {
+       "data": "{Association[\"role\" -> \"user\", \"content\" -> \"Привет\"]}",
+       "mime": "text/plain"
+      }
+     ],
+     "id": "838f45be-bca7-4a3c-83bc-23fbacf5cbe6",
+     "metadata": {
+      "cellLabel": "Out[116]= ",
+      "isBoxData": false
+     }
+    }
+   ],
+   "metadata": {},
+   "executionSummary": {
+    "timing": {
+     "startTime": 1734421627504,
+     "endTime": 1734421627882
+    },
+    "executionOrder": 114,
+    "success": true
+   }
+  },
+  {
+   "kind": 2,
+   "value": "AbsoluteTiming[AIChatComplete[chat];] \r\nchat[\"Messages\"]",
+   "languageId": "wolfram",
+   "outputs": [
+    {
+     "items": [
+      {
+       "data": "<div class=\"wexpr\"><wrow><w></w><wb>{</wb><wrow><w></w><w>0.0018627</w><w>,</w><w>Null</w></wrow><wb>}</wb></wrow></div>",
+       "mime": "x-application/wolfram-language-html"
+      },
+      {
+       "data": "{0.0018627, Null}",
+       "mime": "text/plain"
+      }
+     ],
+     "id": "68839e16-355c-44ee-b348-2c47971da419",
+     "metadata": {
+      "cellLabel": "Out[117]= ",
+      "isBoxData": false
+     }
+    },
+    {
+     "items": [
+      {
+       "data": "<div class=\"wexpr\"><wrow><w></w><wb>{</wb><wrow><w></w><wb></wb><wrow><w></w><wrow><w></w><w>role</w><w class=\"symbol\"></w><w>user</w></wrow><w>,</w><wrow><w></w><w>content</w><w class=\"symbol\"></w><w>Привет</w></wrow></wrow><wb></wb></wrow><wb>}</wb></wrow></div>",
+       "mime": "x-application/wolfram-language-html"
+      },
+      {
+       "data": "{Association[\"role\" -> \"user\", \"content\" -> \"Привет\"]}",
+       "mime": "text/plain"
+      }
+     ],
+     "id": "182a8b2e-7a11-4ded-b745-7c5554cb7b77",
+     "metadata": {
+      "cellLabel": "Out[118]= ",
+      "isBoxData": false
+     }
+    }
+   ],
+   "metadata": {},
+   "executionSummary": {
+    "timing": {
+     "startTime": 1734421630512,
+     "endTime": 1734421630829
+    },
+    "executionOrder": 117,
+    "success": true
+   }
+  },
+  {
+   "kind": 2,
+   "value": "chat[\"Messages\"]",
+   "languageId": "wolfram",
+   "outputs": [
+    {
+     "items": [
+      {
+       "data": "<div class=\"wexpr\"><wrow><w></w><wb>{</wb><wrow><w></w><wrow><w></w><wb></wb><wrow><w></w><wrow><w></w><w>role</w><w class=\"symbol\"></w><w>user</w></wrow><w>,</w><wrow><w></w><w>content</w><w class=\"symbol\"></w><w>Привет</w></wrow></wrow><wb></wb></wrow><w>,</w><wrow><w></w><wb></wb><wrow><w></w><wrow><w></w><w>role</w><w class=\"symbol\"></w><w>assistant</w></wrow><w>,</w><wrow><w></w><w>content</w><w class=\"symbol\"></w><w>Привет! Как я могу помочь вам сегодня?</w></wrow><w>,</w><wrow><w></w><w>refusal</w><w class=\"symbol\"></w><w>Null</w></wrow></wrow><wb></wb></wrow></wrow><wb>}</wb></wrow></div>",
+       "mime": "x-application/wolfram-language-html"
+      },
+      {
+       "data": "{Association[\"role\" -> \"user\", \"content\" -> \"Привет\"], Association[\"role\" -> \"assistant\", \"content\" -> \"Привет! Как я могу помочь вам сегодня?\", \"refusal\" -> Null]}",
+       "mime": "text/plain"
+      }
+     ],
+     "id": "1371e854-3784-4b7d-8ce8-4b3765c320f4",
+     "metadata": {
+      "cellLabel": "Out[119]= ",
+      "isBoxData": false
+     }
+    }
+   ],
+   "metadata": {},
+   "executionSummary": {
+    "timing": {
+     "startTime": 1734421648409,
+     "endTime": 1734421648584
+    },
+    "executionOrder": 119,
+    "success": true
+   }
+  },
+  {
+   "kind": 2,
+   "value": "time::usage = \"time[] current time\"; \r\ntime[] := DateString[]; \r\nchat[\"Tools\"] += time; \r\nchat[\"Messages\"] += \"Сколько времени?\"; ",
    "languageId": "wolfram",
    "outputs": [],
    "metadata": {},
    "executionSummary": {
     "timing": {
-     "startTime": 1734376355847,
-     "endTime": 1734376355926
+     "startTime": 1734421653711,
+     "endTime": 1734421654030
     },
-    "executionOrder": 2,
+    "executionOrder": 120,
     "success": true
    }
   },
   {
    "kind": 2,
-   "value": "chat[\"Messages\"] += \"Привет\"; ",
+   "value": "AbsoluteTiming[AIChatComplete[chat];] \r\nchat[\"Messages\"]",
    "languageId": "wolfram",
-   "outputs": [],
+   "outputs": [
+    {
+     "items": [
+      {
+       "data": "<div class=\"wexpr\"><wrow><w></w><wb>{</wb><wrow><w></w><w>0.0015836</w><w>,</w><w>Null</w></wrow><wb>}</wb></wrow></div>",
+       "mime": "x-application/wolfram-language-html"
+      },
+      {
+       "data": "{0.0015836, Null}",
+       "mime": "text/plain"
+      }
+     ],
+     "id": "ace286fb-f5d7-491f-888b-6b41c32e4621",
+     "metadata": {
+      "cellLabel": "Out[124]= ",
+      "isBoxData": false
+     }
+    },
+    {
+     "items": [
+      {
+       "data": "<div class=\"wexpr\"><wrow><w></w><wb>{</wb><wrow><w></w><wrow><w></w><wb></wb><wrow><w></w><wrow><w></w><w>role</w><w class=\"symbol\"></w><w>user</w></wrow><w>,</w><wrow><w></w><w>content</w><w class=\"symbol\"></w><w>Привет</w></wrow></wrow><wb></wb></wrow><w>,</w><wrow><w></w><wb></wb><wrow><w></w><wrow><w></w><w>role</w><w class=\"symbol\"></w><w>assistant</w></wrow><w>,</w><wrow><w></w><w>content</w><w class=\"symbol\"></w><w>Привет! Как я могу помочь вам сегодня?</w></wrow><w>,</w><wrow><w></w><w>refusal</w><w class=\"symbol\"></w><w>Null</w></wrow></wrow><wb></wb></wrow><w>,</w><wrow><w></w><wb></wb><wrow><w></w><wrow><w></w><w>role</w><w class=\"symbol\"></w><w>user</w></wrow><w>,</w><wrow><w></w><w>content</w><w class=\"symbol\"></w><w>Сколько времени?</w></wrow></wrow><wb></wb></wrow></wrow><wb>}</wb></wrow></div>",
+       "mime": "x-application/wolfram-language-html"
+      },
+      {
+       "data": "{Association[\"role\" -> \"user\", \"content\" -> \"Привет\"], Association[\"role\" -> \"assistant\", \"content\" -> \"Привет! Как я могу помочь вам сегодня?\", \"refusal\" -> Null], Association[\"role\" -> \"user\", \"content\" -> \"Сколько времени?\"]}",
+       "mime": "text/plain"
+      }
+     ],
+     "id": "63004c33-65c1-4b3c-8695-613be8c2681f",
+     "metadata": {
+      "cellLabel": "Out[125]= ",
+      "isBoxData": false
+     }
+    }
+   ],
    "metadata": {},
    "executionSummary": {
     "timing": {
-     "startTime": 1734376375849,
-     "endTime": 1734376375941
+     "startTime": 1734421656218,
+     "endTime": 1734421656513
     },
-    "executionOrder": 3,
+    "executionOrder": 124,
     "success": true
    }
   },
   {
    "kind": 2,
-   "value": "",
+   "value": "chat[\"Messages\"]",
    "languageId": "wolfram",
-   "outputs": [],
+   "outputs": [
+    {
+     "items": [
+      {
+       "data": "<div class=\"wexpr\"><wrow><w></w><wb>{</wb><wrow><w></w><wrow><w></w><wb></wb><wrow><w></w><wrow><w></w><w>role</w><w class=\"symbol\"></w><w>user</w></wrow><w>,</w><wrow><w></w><w>content</w><w class=\"symbol\"></w><w>Привет</w></wrow></wrow><wb></wb></wrow><w>,</w><wrow><w></w><wb></wb><wrow><w></w><wrow><w></w><w>role</w><w class=\"symbol\"></w><w>assistant</w></wrow><w>,</w><wrow><w></w><w>content</w><w class=\"symbol\"></w><w>Привет! Как я могу помочь вам сегодня?</w></wrow><w>,</w><wrow><w></w><w>refusal</w><w class=\"symbol\"></w><w>Null</w></wrow></wrow><wb></wb></wrow><w>,</w><wrow><w></w><wb></wb><wrow><w></w><wrow><w></w><w>role</w><w class=\"symbol\"></w><w>user</w></wrow><w>,</w><wrow><w></w><w>content</w><w class=\"symbol\"></w><w>Сколько времени?</w></wrow></wrow><wb></wb></wrow><w>,</w><wrow><w></w><wb></wb><wrow><w></w><wrow><w></w><w>role</w><w class=\"symbol\"></w><w>assistant</w></wrow><w>,</w><wrow><w></w><w>content</w><w class=\"symbol\"></w><w>Null</w></wrow><w>,</w><wrow><w></w><w>tool_calls</w><w class=\"symbol\"></w><wrow><w></w><wb>{</wb><wrow><w></w><wb></wb><wrow><w></w><wrow><w></w><w>id</w><w class=\"symbol\"></w><w>call_A3rbbeBKePTd7vF30maNgszM</w></wrow><w>,</w><wrow><w></w><w>type</w><w class=\"symbol\"></w><w>function</w></wrow><w>,</w><wrow><w></w><w>function</w><w class=\"symbol\"></w><wrow><w></w><wb></wb><wrow><w></w><wrow><w></w><w>name</w><w class=\"symbol\"></w><w>Global__time</w></wrow><w>,</w><wrow><w></w><w>arguments</w><w class=\"symbol\"></w><w>{}</w></wrow></wrow><wb></wb></wrow></wrow></wrow><wb></wb></wrow><wb>}</wb></wrow></wrow><w>,</w><wrow><w></w><w>refusal</w><w class=\"symbol\"></w><w>Null</w></wrow></wrow><wb></wb></wrow><w>,</w><wrow><w></w><wb></wb><wrow><w></w><wrow><w></w><w>role</w><w class=\"symbol\"></w><w>tool</w></wrow><w>,</w><wrow><w></w><w>content</w><w class=\"symbol\"></w><w>Tue 17 Dec 2024 11:47:37</w></wrow><w>,</w><wrow><w></w><w>tool_call_id</w><w class=\"symbol\"></w><w>call_A3rbbeBKePTd7vF30maNgszM</w></wrow></wrow><wb></wb></wrow><w>,</w><wrow><w></w><wb></wb><wrow><w></w><wrow><w></w><w>role</w><w class=\"symbol\"></w><w>assistant</w></wrow><w>,</w><wrow><w></w><w>content</w><w class=\"symbol\"></w><w>Сейчас 11:47 (11 часов 47 минут) 17 декабря 2024 года. Как я могу помочь вам далее?</w></wrow><w>,</w><wrow><w></w><w>refusal</w><w class=\"symbol\"></w><w>Null</w></wrow></wrow><wb></wb></wrow></wrow><wb>}</wb></wrow></div>",
+       "mime": "x-application/wolfram-language-html"
+      },
+      {
+       "data": "{Association[\"role\" -> \"user\", \"content\" -> \"Привет\"], Association[\"role\" -> \"assistant\", \"content\" -> \"Привет! Как я могу помочь вам сегодня?\", \"refusal\" -> Null], Association[\"role\" -> \"user\", \"content\" -> \"Сколько времени?\"], Association[\"role\" -> \"assistant\", \"content\" -> Null, \"tool_calls\" -> {Association[\"id\" -> \"call_A3rbbeBKePTd7vF30maNgszM\", \"type\" -> \"function\", \"function\" -> Association[\"name\" -> \"Global__time\", \"arguments\" -> \"{}\"]]}, \"refusal\" -> Null], Association[\"role\" -> \"tool\", \"content\" -> \"Tue 17 Dec 2024 11:47:37\", \"tool_call_id\" -> \"call_A3rbbeBKePTd7vF30maNgszM\"], Association[\"role\" -> \"assistant\", \"content\" -> \"Сейчас 11:47 (11 часов 47 минут) 17 декабря 2024 года. Как я могу помочь вам далее?\", \"refusal\" -> Null]}",
+       "mime": "text/plain"
+      }
+     ],
+     "id": "ac00b6a5-bbb2-4563-9449-128ca5805c18",
+     "metadata": {
+      "cellLabel": "Out[126]= ",
+      "isBoxData": false
+     }
+    }
+   ],
    "metadata": {},
-   "executionSummary": {}
+   "executionSummary": {
+    "timing": {
+     "startTime": 1734421667852,
+     "endTime": 1734421668027
+    },
+    "executionOrder": 126,
+    "success": true
+   }
   }
  ]
 }
