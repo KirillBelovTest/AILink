@@ -48,19 +48,22 @@ AIChatComplete[chatObject, "prompt"]
 AIChatComplete[..., chatObjectOptions]
 ```
 
-### AIChatCompleteAsync
+### AIChatComplete Async
 
 Async chat completion.  
 When the body is received, a callback executes. 
 
 ```mathematica
-AIChatCompleteAsync["prompt", callbackFunction] 
+Get["KirillBelov`AILink`ChatCompletions`"]
 
-AIChatComplete[chatObject, callbackFunction] 
+chat = AIChatObject[
+    "Async" -> True, 
+    "MessageHandler" -> Function[Echo[#, "[AI]"]]
+]; 
 
-AIChatComplete[chatObject, "prompt", callbackFunction]
+chat["Messages"] += "Hi!"; 
 
-AIChatComplete[..., callbackFunction, chatObjectOptions]
+AIChatComplete[chat]
 ```
 
 ## Chat properties
