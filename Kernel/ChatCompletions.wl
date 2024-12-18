@@ -40,19 +40,34 @@ CreateType[AIChatObject, {
 }]; 
 
 
-AIChatComplete[chat_AIChatObject] := 
-If[chat["Async"], 
-    Which[
-        toolCallQ[chat], toolCallAsync[chat, AIChatComplete[chat]&], 
-        assistCallQ[chat], assistCallAsync[chat, AIChatComplete[chat]&], 
-        True, chat
-    ], 
-(*Else*)
-    Which[
-        toolCallQ[chat], toolCall[chat]; AIChatComplete[chat], 
-        assistCallQ[chat], assistCall[chat]; AIChatComplete[chat], 
-        True, chat
-    ]
+Options[AIChatComplete] = {
+    "Async" -> Automatic, 
+    "MessageHandler" :> Automatic
+}; 
+
+
+AIChatComplete[chat_AIChatObject, opts: OptionsPattern[]] := 
+Module[{
+    async = If[OptionValue["Async"] === Automatic, chat["Async"], OptionValue["Async"]], 
+    messageHandler = If[OptionValue["MessageHandler"] === Automatic, chat["MessageHandler"], OptionValue["MessageHandler"]]
+}, 
+    chat["MessageHandler"] = messageHandler; 
+
+    If[async, 
+        Which[
+            toolCallQ[chat], toolCallAsync[chat, AIChatComplete[chat, opts]&], 
+            assistCallQ[chat], assistCallAsync[chat, AIChatComplete[chat, opts]&], 
+            True, chat
+        ], 
+    (*Else*)
+        Which[
+            toolCallQ[chat], toolCall[chat]; AIChatComplete[chat, opts], 
+            assistCallQ[chat], assistCall[chat]; AIChatComplete[chat, opts], 
+            True, chat
+        ]
+    ]; 
+
+    Return[chat]
 ]; 
 
 
@@ -82,7 +97,7 @@ With[{
     toolId = First @ Keys @ Select[chat["ToolCalls"], # === Null&]
 }, 
     Module[{
-        toolCallAssoc, functionName, functionArguments, functionResult, function, args
+        toolCallAssoc, functionName, functionArguments, functionResult, function, args, resultMessage
     }, 
         toolCallAssoc = 
             SelectFirst[toolId === #["id"]&] @ 
@@ -101,11 +116,15 @@ With[{
 
         chat["ToolCalls"] = Append[chat["ToolCalls"], toolId -> functionResult]; 
 
-        AppendTo[chat["Messages"], <|
+        resultMessage = <|
             "role" -> "tool", 
             "content" -> functionResult, 
             "tool_call_id" -> toolId
-        |>]; 
+        |>; 
+
+        AppendTo[chat["Messages"], resultMessage]; 
+
+        chat["MessageHandler"][chat, resultMessage]; 
 
         Return[chat]
     ]; 
@@ -306,7 +325,7 @@ Module[{downValues = DownValues[function], patterns, parameters},
 
 
 convertToReadable[text_String] /; StringContainsQ[text, "\[CapitalEth]"] := 
-FromCharacterCode[ToCharacterCode[text, "ISO8859-1"], "UTF8"]; 
+If[StringQ[#], #, text]& @ FromCharacterCode[ToCharacterCode[text, "ISO8859-1"], "UTF8"]; 
 
 
 convertToReadable[expr_] := expr; 
