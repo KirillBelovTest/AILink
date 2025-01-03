@@ -13,7 +13,8 @@ AIChatComplete[prompt] create a chat and completes it with a custom prompt.";
 
 
 AIChatObject::usage = 
-"AIChatObject[] is an object that represents a chat."; 
+"AIChatObject[] is an object that represents a chat.
+AIChatObject[systemPrompt] is an object that represents a chat with a system prompt."; 
 
 
 Begin["`Private`"]; 
@@ -232,11 +233,17 @@ Module[{endpoint, apiKey, requestAssoc},
 
     requestAssoc = DeleteCases[requestAssoc, Automatic]; 
 
+    Check[
+        requestBody = ExportString[requestAssoc, "RawJSON", CharacterEncoding -> "UTF-8"], 
+        Echo[requestAssoc, "ERROR in requestAssoc"]; 
+        Return[Null]
+    ]; 
+
     HTTPRequest[endpoint, <|
         Method -> "POST", 
         "Headers" -> <|"Authorization" -> "Bearer " <> apiKey|>, 
         "ContentType" -> "application/json", 
-        "Body" -> ExportString[requestAssoc, "RawJSON", CharacterEncoding -> "UTF-8"]
+        "Body" -> requestBody
     |>]
 ]; 
 
