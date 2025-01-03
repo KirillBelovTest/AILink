@@ -36,7 +36,7 @@ CreateType[AIChatObject, {
     "APIKey" :> SystemCredential["OPENAI_API_KEY"], 
     "Endpoint" -> "https://api.openai.com/v1/chat/completions", 
 
-    "MessageHandler" -> Function[Echo[#, Now]], 
+    "MessageHandler" -> Function[#], 
     "Async" -> False
 }]; 
 
@@ -76,14 +76,14 @@ Unprotect[AddTo];
 
 
 AddTo[(chat_?(Head[#] === AIChatObject&))["Messages"], message_String] := 
-AppendTo[chat["Messages"], <|
+chat["Messages"] = Append[chat["Messages"], <|
     "role" -> "user", 
     "content" -> message
 |>]; 
 
 
 AddTo[(chat_?(Head[#] === AIChatObject&))["Tools"], function_Symbol] := 
-AppendTo[chat["Tools"], functionToToolAssoc[function]]; 
+chat["Tools"] = Append[chat["Tools"], functionToToolAssoc[function]]; 
 
 
 Protect[AddTo]; 
@@ -123,7 +123,7 @@ With[{
             "tool_call_id" -> toolId
         |>; 
 
-        AppendTo[chat["Messages"], resultMessage]; 
+        chat["Messages"] = Append[chat["Messages"], resultMessage]; 
 
         chat["MessageHandler"][chat, resultMessage]; 
 
@@ -170,7 +170,7 @@ With[{
 
                             chat["MessageHandler"][chat, message]; 
 
-                            AppendTo[chat["Messages"], message]; 
+                            chat["Messages"] = Append[chat["Messages"], message]; 
 
                             continuation[chat]
                         ]
@@ -216,7 +216,7 @@ With[{$request = createRequest[chat]},
 
 
 AIChatObject /: createRequest[chat_AIChatObject] := 
-Module[{endpoint, apiKey, requestAssoc}, 
+Module[{endpoint, apiKey, requestAssoc, requestBody}, 
     endpoint = chat["Endpoint"]; 
     apiKey = chat["APIKey"]; 
 
@@ -233,10 +233,15 @@ Module[{endpoint, apiKey, requestAssoc},
 
     requestAssoc = DeleteCases[requestAssoc, Automatic]; 
 
+<<<<<<< HEAD
     Check[
         requestBody = ExportString[requestAssoc, "RawJSON", CharacterEncoding -> "UTF-8"], 
         Echo[requestAssoc, "ERROR in requestAssoc"]; 
         Return[Null]
+=======
+    Check[requestBody = ExportString[requestAssoc, "RawJSON", CharacterEncoding -> "UTF-8"], 
+        Echo[requestAssoc]
+>>>>>>> 4822ea5a41b4cba63a06fcdb80a2cf74032e6af9
     ]; 
 
     HTTPRequest[endpoint, <|
@@ -258,13 +263,13 @@ Module[{responseBody, completion, completionMessage},
 
     completion[["choices", 1, "message", "content"]] = convertToReadable[completion[["choices", 1, "message", "content"]]]; 
 
-    AppendTo[chat["Completions"], completion]; 
+    chat["Completions"] = Append[chat["Completions"], completion]; 
 
     completionMessage = completion[["choices", 1, "message"]]; 
 
     chat["MessageHandler"][chat, completionMessage]; 
 
-    AppendTo[chat["Messages"], completionMessage]; 
+    chat["Messages"] = Append[chat["Messages"], completionMessage]; 
 
     If[KeyExistsQ[completionMessage, "tool_calls"], 
         Map[
