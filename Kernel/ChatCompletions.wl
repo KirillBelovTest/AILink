@@ -233,15 +233,8 @@ Module[{endpoint, apiKey, requestAssoc, requestBody},
 
     requestAssoc = DeleteCases[requestAssoc, Automatic]; 
 
-<<<<<<< HEAD
-    Check[
-        requestBody = ExportString[requestAssoc, "RawJSON", CharacterEncoding -> "UTF-8"], 
-        Echo[requestAssoc, "ERROR in requestAssoc"]; 
-        Return[Null]
-=======
     Check[requestBody = ExportString[requestAssoc, "RawJSON", CharacterEncoding -> "UTF-8"], 
         Echo[requestAssoc]
->>>>>>> 4822ea5a41b4cba63a06fcdb80a2cf74032e6af9
     ]; 
 
     HTTPRequest[endpoint, <|
@@ -304,7 +297,7 @@ Module[{downValues = DownValues[function], patterns, parameters},
 
         parameters["type"] = "object"; 
 
-        patterns = downValues[[1, 1]] /. Verbatim[HoldPattern][_[$params___]] -> {$params}; 
+        patterns = downValues[[1, 1]] /. Verbatim[HoldPattern][_[$params___]] :> {$params}; 
 
         parameters["properties"] = Association @ Map[
             Module[{name, type, description}, 
