@@ -5,7 +5,7 @@ PacletObject[
     "Name" -> "KirillBelov/AILink",
     "Description" -> "Client for differen AI",
     "Creator" -> "Kirill Belov",
-    "Version" -> "1.0.8",
+    "Version" -> "1.0.9",
     "WolframVersion" -> "14+",
     "PublisherID" -> "KirillBelov",
     "License" -> "MIT",
@@ -17,9 +17,10 @@ PacletObject[
         "Root" -> "Kernel",
         "Context" -> {
           {"KirillBelov`AILink`", "AILink.wl"},
-          {"KirillBelov`AILink`ChatView`", "ChatView.wl"}, 
-          {"KirillBelov`AILink`ChatCompletions`", "ChatCompletions.wl"}, 
-          {"KirillBelov`AILink`ChatObject`", "ChatObject.wl"}
+          {"KirillBelov`AILink`Common`", "Common.wl"},
+          {"KirillBelov`AILink`SpeechToText`", "SpeechToText.wl"},
+          {"KirillBelov`AILink`TextToSpeech`", "TextToSpeech.wl"},
+          {"KirillBelov`AILink`Completions`", "Completions.wl"}
         }
       },
       {

@@ -1,11 +1,7 @@
 (* ::Package:: *)
 
-(* ::Section:: *)
-(*Package Header*)
-
-
 BeginPackage["KirillBelov`AILink`ChatView`", {
-    "KirillBelov`AILink`",
+    "KirillBelov`AILink`Completions`",
     "JerryI`Misc`Events`",
     "JerryI`Misc`Language`",
     "JerryI`Misc`WLJS`Transport`",
@@ -43,8 +39,6 @@ ChatView /: MakeBoxes[m: ChatView[a_AIChatObject], StandardForm] := LeakyModule[
       
       ViewBox[m, ChatView[Global`messages // Offload, channel]]
     ]
-    
-	
 ] /; TrueQ[Internal`Kernel`WLJSQ]
 
 ChatView /: MakeBoxes[m: ChatView[a_AIChatObject], StandardForm] := With[{
